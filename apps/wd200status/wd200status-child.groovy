@@ -18,7 +18,7 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-def setVersion() {
+private def setVersion() {
     state.name = "WD200 Status Condition"
     state.version = "1.0.0"
 }
@@ -44,9 +44,18 @@ def pageConfig() {
             label title: "Label (optional)", required: false
         }
         section("<b>LED Indicator</b>") {
-            input name: "index", type: "number", title: "Index (0:all LEDs, 1-7:top to bottom LED)", range: "0..7", required: true
+            input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", range: "1..7", required: true
             input name: "color", type: "enum", title: "Color", required: true,
-                options: ["Red", "Yellow", "Green", "Cyan", "Blue", "Magenta", "White"]
+                options: [
+                    1: "Red",
+                    5: "Yellow",
+                    2: "Green",
+                    6: "Cyan",
+                    3: "Blue",
+                    4: "Magenta",
+                    7: "White",
+                    0: "Off"
+                ]
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
         }
         section("<b>Input</b>") {
@@ -63,9 +72,9 @@ def pageConfig() {
             }
         }
         section("Instructions", hideable: true, hidden: true) {
-    		paragraph "TODO"
+            paragraph "TODO"
         }
-	}
+    }
 }
 
 def installed() {
@@ -79,7 +88,7 @@ def updated() {
     initialize()
 }
 
-def initialize() {
+private def initialize() {
     setVersion()
     setDefaults()
     parent.refreshConditions()
@@ -87,21 +96,21 @@ def initialize() {
 
 def getCondition() {
     if (cap == "on") {[
-        index: index,
-        color: color,
-        priority: priority
+        index: index as int,
+        color: color as int,
+        priority: priority as int
     ]}
 }
 
-def logDebug(msg) {
+private def logDebug(msg) {
     if (parent.debugEnable) { log.debug msg }
 }
 
-def setDefaults() {
+private def setDefaults() {
     if (state.msg == null) { state.msg = "" }
 }
 
-private attributeValues(attributeName) {
+private def attributeValues(attributeName) {
     switch (attributeName) {
         case "switch":
             return ["on","off"]

@@ -18,7 +18,7 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-def setVersion(){
+private def setVersion(){
     state.name = "WD200 Status"
     state.version = "1.0.0"
 }
@@ -47,7 +47,7 @@ def updated() {
     initialize()
 }
 
-def initialize() {
+private def initialize() {
     logDebug "There are ${childApps.size()} child apps..."
     childApps.each {child ->
         logDebug "Child app: ${child.label}"
@@ -59,20 +59,20 @@ def mainPage() {
         installCheck()
         if (state.appInstalled == 'COMPLETE') {
             section() {
-                paragraph "<h2>${state.name} v${state.version}<h2>"
+                paragraph "<h3>${state.name}</h3>"
                 label title: "App Name (optional)", required: false
                 input "dimmers", "capability.switchLevel", title: "Target Dimmers", required: true, multiple: true
                 app name: "anyOpenApp", appName: "WD200 Status Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             }
             section("Instructions", hideable: true, hidden: true) {
-                paragraph "TODO"
+                paragraph "<h2>${state.name} v${state.version}<h2>"
             }
         }
     }
 }
 
-def installCheck() {
+private def installCheck() {
     setVersion()
     state.appInstalled = app.getInstallationState() 
     if (state.appInstalled != 'COMPLETE') {
@@ -81,18 +81,31 @@ def installCheck() {
         }
   	}
   	else {
-        logDebug "${app.label} Installed OK"
+        //logDebug "${app.label} Installed OK"
   	}
 }
 
 def refreshConditions() {
     def children = getChildApps()
     logDebug "Refreshing ${children.size()} conditions..."
+    def leds = [1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7:null]
     children.each { child ->
-        logDebug "Condition ${child.label}: ${child.getCondition()}"
+        def condition = child.getCondition()
+        logDebug "Condition ${child.label}: ${condition}"
+        if (condition != null) {
+            if (leds[condition.index] == null || leds[condition.index].priority < condition.priority) {
+                leds[condition.index] = condition
+            }
+        }
+    }
+
+    logDebug "Setting LEDs to ${leds}"
+    leds.each { led ->
+        logDebug "Set LED ${led}"
+        dimmers.setStatusLED(led.key as String, led.value == null ? "0" : led.value.color as String)
     }
 }
 
-def logDebug(msg) {
+private def logDebug(msg) {
     if (debugEnable) { log.debug msg }
 }
