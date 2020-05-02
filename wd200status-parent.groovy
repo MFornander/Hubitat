@@ -1,17 +1,26 @@
 /**
- *  ****************  WD200 Status ********************
+ * ****************  WD200 Status ********************
  *
- *  Copyright 2020 Mattias Fornander (@mfornander)
+ * MIT License - see full license in repository LICENSE file
+ * Copyright (c) 2020 Mattias Fornander (@mfornander)
  *
- *  TODO: Documentation
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * TODO: Documentation
  * 
- *  Versions:
+ * Versions:
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
 def setVersion(){
     state.name = "WD200 Status"
-	state.version = "1.0.0"
+    state.version = "1.0.0"
 }
 
 definition(
@@ -53,7 +62,7 @@ def mainPage() {
                 paragraph "<h2>${state.name} v${state.version}<h2>"
                 label title: "App Name (optional)", required: false
                 input "dimmers", "capability.switchLevel", title: "Target Dimmers", required: true, multiple: true
-				app name: "anyOpenApp", appName: "WD200 Status Child", namespace: "MFornander", title: "Add LED status condition", multiple: true
+				app name: "anyOpenApp", appName: "WD200 Status Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input "debugEnabled", "bool", title: "Enable debug log"
             }
             section("Instructions", hideable: true, hidden: true) {
