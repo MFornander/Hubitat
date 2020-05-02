@@ -18,9 +18,9 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-def setVersion(){
+def setVersion() {
     state.name = "WD200 Status Condition"
-	state.version = "1.0.0"
+    state.version = "1.0.0"
 }
 
 definition(
@@ -28,7 +28,7 @@ definition(
     namespace: "MFornander",
     author: "Mattias Fornander",
     description: "TODO",
-	parent: "MFornander:WD200 Status",
+    parent: "MFornander:WD200 Status",
     iconUrl: "",
     iconX2Url: ""
 )
@@ -43,56 +43,62 @@ def pageConfig() {
         section("<b>WD200 Status Condition</b>") {
             label title: "Label (optional)", required: false
         }
-		section("<b>LED Indicator</b>") {
-            input name: "index", type: "number", title: "Index (0=all, 1=top, 7=bottom)", range: "0..7", required: true
-			input name: "color", type: "enum", title: "Color", required: true,
+        section("<b>LED Indicator</b>") {
+            input name: "index", type: "number", title: "Index (0:all LEDs, 1-7:top to bottom LED)", range: "0..7", required: true
+            input name: "color", type: "enum", title: "Color", required: true,
                 options: ["Red", "Yellow", "Green", "Cyan", "Blue", "Magenta", "White"]
-            		}
+            input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
+        }
         section("<b>Input</b>") {
-            input name: "cap", type: "enum", title: "Sensor Type", required: true, default: "off", submitOnChange: true,
+            input name: "cap", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
                 options: [
                     "on": "Always On",
                     "off": "Disabled",
                     "contactSensor": "Contact"
-                ] // "Lock", "Motion", "Alarm", ...
+                ]
             if (cap != null && cap != "on" && cap != "off") {
                 input name: "sensorList", type: "capability.${cap}", title: "Sensors", required: true, multiple: true
                 input name: "sensorState", type: "enum", title: "State", required: true, multiple: false,
                     options: attributeValues(cap)
             }
         }
-        section() {
-            input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
-        }
         section("Instructions", hideable: true, hidden: true) {
-    		paragraph "For use with any valve device connected to your hose, like the Orbit Hose Water Timer. Features multiple timers and restrictions."
+    		paragraph "TODO"
         }
 	}
 }
 
 def installed() {
     logDebug "Installed with settings: ${settings}"
-	initialize()
+    initialize()
 }
 
 def updated() {	
     logDebug "Updated with settings: ${settings}"
-	unschedule()
-	initialize()
+    unschedule()
+    initialize()
 }
 
 def initialize() {
     setVersion()
     setDefaults()
+    parent.refreshConditions()
+}
+
+def getCondition() {
+    if (cap == "on") {[
+        index: index,
+        color: color,
+        priority: priority
+    ]}
 }
 
 def logDebug(msg) {
-    if (debugEnable) { log.debug msg }
+    if (parent.debugEnable) { log.debug msg }
 }
 
 def setDefaults() {
-	if (debugEnable == null) { logEnable = false }
-	if (state.msg == null) { state.msg = "" }
+    if (state.msg == null) { state.msg = "" }
 }
 
 private attributeValues(attributeName) {

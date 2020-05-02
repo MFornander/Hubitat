@@ -33,54 +33,66 @@ definition(
 )
 
 preferences {
-     page name: "mainPage", title: "", install: true, uninstall: true
+    page name: "mainPage", title: "", install: true, uninstall: true
 } 
 
 def installed() {
-    log.debug "Installed with settings: ${settings}"
+    logDebug "Installed with settings: ${settings}"
     initialize()
 }
 
 def updated() {
-    log.debug "Updated with settings: ${settings}"
+    logDebug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
 }
 
 def initialize() {
-    log.info "There are ${childApps.size()} child apps:"
+    logDebug "There are ${childApps.size()} child apps..."
     childApps.each {child ->
-        log.info "Child app: ${child.label}"
+        logDebug "Child app: ${child.label}"
     }
 }
 
 def mainPage() {
     dynamicPage(name: "mainPage") {
-    	installCheck()
-		if (state.appInstalled == 'COMPLETE') {
+        installCheck()
+        if (state.appInstalled == 'COMPLETE') {
             section() {
                 paragraph "<h2>${state.name} v${state.version}<h2>"
                 label title: "App Name (optional)", required: false
                 input "dimmers", "capability.switchLevel", title: "Target Dimmers", required: true, multiple: true
-				app name: "anyOpenApp", appName: "WD200 Status Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
-                input "debugEnabled", "bool", title: "Enable debug log"
+                app name: "anyOpenApp", appName: "WD200 Status Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
+                input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             }
             section("Instructions", hideable: true, hidden: true) {
-				paragraph "TODO"
-			}
-		}
-	}
+                paragraph "TODO"
+            }
+        }
+    }
 }
 
 def installCheck() {
     setVersion()
-	state.appInstalled = app.getInstallationState() 
-	if (state.appInstalled != 'COMPLETE') {
-		section {
+    state.appInstalled = app.getInstallationState() 
+    if (state.appInstalled != 'COMPLETE') {
+        section {
             paragraph "Please hit 'Done' to install '${app.label}'"
         }
   	}
   	else {
-        log.info "${app.label} Installed OK"
+        logDebug "${app.label} Installed OK"
   	}
+}
+
+def refreshConditions() {
+    def children = getChildApps()
+    logDebug "Refreshing ${children.size()} conditions..."
+    children.each { child ->
+        logDebug "Condition ${child.label}: ${child.getCondition()}"
+    }
+}
+
+def logDebug(msg) {
+    if (debugEnable) { log.debug msg }
 }
