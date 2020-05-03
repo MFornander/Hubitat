@@ -18,7 +18,7 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-private def setVersion(){
+private setVersion(){
     state.name = "WD200 Status"
     state.version = "1.0.0"
 }
@@ -47,7 +47,7 @@ def updated() {
     initialize()
 }
 
-private def initialize() {
+private initialize() {
     logDebug "There are ${childApps.size()} child apps..."
     childApps.each {child ->
         logDebug "Child app: ${child.label}"
@@ -72,7 +72,7 @@ def mainPage() {
     }
 }
 
-private def installCheck() {
+private installCheck() {
     setVersion()
     state.appInstalled = app.getInstallationState() 
     if (state.appInstalled != 'COMPLETE') {
@@ -80,32 +80,35 @@ private def installCheck() {
             paragraph "Please hit 'Done' to install '${app.label}'"
         }
   	}
-  	else {
-        //logDebug "${app.label} Installed OK"
-  	}
 }
 
-def refreshConditions() {
+private addCondition(leds, condition) {
+    logDebug "Add condition ${condition}"
+    if (condition != null) {
+        if (leds[condition.index] == null || leds[condition.index].priority < condition.priority) {
+            leds[condition.index] = condition
+        }
+    }
+}
+
+def refreshConditions(newCondition) {
+    def leds = [1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7:null]
+    addCondition(leds, newCondition)
+
     def children = getChildApps()
     logDebug "Refreshing ${children.size()} conditions..."
-    def leds = [1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7:null]
     children.each { child ->
-        def condition = child.getCondition()
-        logDebug "Condition ${child.label}: ${condition}"
-        if (condition != null) {
-            if (leds[condition.index] == null || leds[condition.index].priority < condition.priority) {
-                leds[condition.index] = condition
-            }
-        }
+        addCondition(leds, child.getCondition())
     }
 
     logDebug "Setting LEDs to ${leds}"
     leds.each { led ->
-        logDebug "Set LED ${led}"
+        //logDebug "Set LED ${led}"
+        //BUG: Sort set status such that clearing comes after setting or there may be a "LEDS show dimmer state" briefly
         dimmers.setStatusLED(led.key as String, led.value == null ? "0" : led.value.color as String)
     }
 }
 
-private def logDebug(msg) {
+private logDebug(msg) {
     if (debugEnable) { log.debug msg }
 }

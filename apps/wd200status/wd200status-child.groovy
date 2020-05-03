@@ -18,7 +18,7 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-private def setVersion() {
+private setVersion() {
     state.name = "WD200 Status Condition"
     state.version = "1.0.0"
 }
@@ -41,7 +41,7 @@ def pageConfig() {
     dynamicPage(name: "", title: "", install: true, uninstall: true, refreshInterval:0) {
         setVersion()
         section("<b>WD200 Status Condition</b>") {
-            label title: "Label (optional)", required: false
+            label title: "Label", required: true
         }
         section("<b>LED Indicator</b>") {
             input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", range: "1..7", required: true
@@ -63,6 +63,7 @@ def pageConfig() {
                 options: [
                     "on": "Always On",
                     "off": "Disabled",
+                    "switch": "Switch",
                     "contactSensor": "Contact"
                 ]
             if (cap != null && cap != "on" && cap != "off") {
@@ -84,14 +85,23 @@ def installed() {
 
 def updated() {	
     logDebug "Updated with settings: ${settings}"
-    unschedule()
+    unsubscribe()
     initialize()
 }
 
-private def initialize() {
-    setVersion()
-    setDefaults()
-    parent.refreshConditions()
+def uninstalled() {
+    logDebug "Uninstalled with settings: ${settings}"
+    //BUG: Status not updating correctly after removing a condition
+    initialize()
+}
+
+private initialize() {
+    def condition = getCondition()
+    logDebug "Initialize with settings:${settings}, condition:${condition}, state:${state}"
+    parent.refreshConditions(condition)
+}
+
+private isActive() {
 }
 
 def getCondition() {
@@ -102,15 +112,11 @@ def getCondition() {
     ]}
 }
 
-private def logDebug(msg) {
+private logDebug(msg) {
     if (parent.debugEnable) { log.debug msg }
 }
 
-private def setDefaults() {
-    if (state.msg == null) { state.msg = "" }
-}
-
-private def attributeValues(attributeName) {
+private attributeValues(attributeName) {
     switch (attributeName) {
         case "switch":
             return ["on","off"]
