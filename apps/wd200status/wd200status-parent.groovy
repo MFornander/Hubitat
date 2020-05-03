@@ -2,6 +2,7 @@
  * ****************  WD200 Status ********************
  *
  * MIT License - see full license in repository LICENSE file
+ *
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -20,7 +21,7 @@
 
 private setVersion(){
     state.name = "WD200 Status"
-    state.version = "1.0.0"
+    state.version = "0.0.1"
 }
 
 definition(
@@ -49,9 +50,9 @@ def updated() {
 }
 
 private initialize() {
-    logDebug "There are ${childApps.size()} child apps..."
+    logDebug "There are ${childApps.size()} conditions..."
     childApps.each {child ->
-        logDebug "Child app: ${child.label}"
+        logDebug "Condition: ${child.label}"
     }
 }
 
@@ -60,14 +61,15 @@ def mainPage() {
         installCheck()
         if (state.appInstalled == 'COMPLETE') {
             section() {
-                paragraph "<h3>${state.name}</h3>"
+                paragraph "<h2>${state.name}</h2>TODO"
                 label title: "App Name (optional)", required: false
-                input "dimmers", "capability.switchLevel", title: "Target Dimmers", required: true, multiple: true
-                app name: "anyOpenApp", appName: "WD200 Status Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
+                input "dimmers", "capability.switchLevel", title: "Status Dimmers", required: true, multiple: true
+                app name: "anyOpenApp", appName: "WD200 Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             }
             section("Instructions", hideable: true, hidden: true) {
-                paragraph "<h2>${state.name} v${state.version}<h2>"
+                paragraph "<b>${state.name} v${state.version}</b>"
+                paragraph "TODO"
             }
         }
     }
@@ -85,7 +87,7 @@ private installCheck() {
 
 private addCondition(leds, condition) {
     logDebug "Add condition ${condition}"
-    if (condition != null) {
+    if (condition) {
         if (leds[condition.index] == null || leds[condition.index].priority < condition.priority) {
             leds[condition.index] = condition
         }
@@ -104,9 +106,10 @@ def refreshConditions(newCondition) {
 
     logDebug "Setting LEDs to ${leds}"
     leds.each { led ->
-        //logDebug "Set LED ${led}"
-        //BUG: Sort set status such that clearing comes after setting or there may be a "LEDS show dimmer state" briefly
-        dimmers.setStatusLED(led.key as String, led.value == null ? "0" : led.value.color as String)
+        if (led.value) dimmers.setStatusLED(led.key as String, led.value.color as String)
+    }
+    leds.each { led ->
+        if (!led.value) dimmers.setStatusLED(led.key as String, "0")
     }
 }
 

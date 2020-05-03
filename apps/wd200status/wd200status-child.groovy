@@ -2,6 +2,7 @@
  * ****************  WD200 Status Condition ********************
  *
  * MIT License - see full license in repository LICENSE file
+ *
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -19,12 +20,12 @@
  */
 
 private setVersion() {
-    state.name = "WD200 Status Condition"
-    state.version = "1.0.0"
+    state.name = "WD200 Condition"
+    state.version = "0.0.1"
 }
 
 definition(
-    name: "WD200 Status Condition",
+    name: "WD200 Condition",
     namespace: "MFornander",
     author: "Mattias Fornander",
     description: "TODO",
@@ -41,8 +42,8 @@ preferences {
 def pageConfig() {
     dynamicPage(name: "", title: "", install: true, uninstall: true, refreshInterval:0) {
         setVersion()
-        section("<b>WD200 Status Condition</b>") {
-            label title: "Label", required: true
+        section("<b>WD200 Condition</b>") {
+            label title: "Condition Name", required: true
         }
         section("<b>LED Indicator</b>") {
             input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", range: "1..7", required: true
@@ -60,21 +61,20 @@ def pageConfig() {
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
         }
         section("<b>Input</b>") {
-            input name: "cap", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
+            input name: "sensorType", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
                 options: [
                     "on": "Always On",
-                    "off": "Disabled",
                     "switch": "Switch",
-                    "contactSensor": "Contact"
+                    "contact": "Door/Window Sensor",
+                    "lock": "Lock",
+                    "motion": "Motion Sensor",
+                    "water": "Water Sensor"
                 ]
-            if (cap != null && cap != "on" && cap != "off") {
-                input name: "sensorList", type: "capability.${cap}", title: "Sensors", required: true, multiple: true
-                input name: "sensorState", type: "enum", title: "State", required: true, multiple: false,
-                    options: attributeValues(cap)
+            if (sensorType && sensorType != "on") {
+                input name: "sensorList", type: "capability.${capabilityName(sensorType)}", title: "Sensor", required: true, multiple: false
+                input name: "sensorState", type: "enum", title: "State", required: true,
+                    options: attributeValues(sensorType)
             }
-        }
-        section("Instructions", hideable: true, hidden: true) {
-            paragraph "TODO"
         }
     }
 }
@@ -99,14 +99,28 @@ def uninstalled() {
 private initialize() {
     def condition = getCondition()
     logDebug "Initialize with settings:${settings}, condition:${condition}, state:${state}"
+
+    atomicState.active = sensorType == "on"
+    switch (sensorType) {
+        case [null, "on", "off"]:
+            break
+        default:
+            logDebug "${sensorList} ${sensorType} ${atomicState}" 
+            subscribe(sensorList, sensorType, sensorHandler)
+            break
+    }
     parent.refreshConditions(condition)
 }
 
-private isActive() {
+def sensorHandler(evt) {
+    atomicState.active = evt.value == sensorState
+    logDebug "sensorHandler evt.value:${evt.value}, state:${atomicState}, sensorState:${sensorState}"
+    parent.refreshConditions()
 }
 
 def getCondition() {
-    if (cap == "on") {[
+    logDebug "getCondition ${atomicState} ${settings}"
+    if (atomicState.active) {[
         index: index as int,
         color: color as int,
         priority: priority as int
@@ -121,15 +135,24 @@ private attributeValues(attributeName) {
     switch (attributeName) {
         case "switch":
             return ["on","off"]
-        case "contactSensor":
+        case "contact":
             return ["open","closed"]
-        case "motionSensor":
+        case "motion":
             return ["active","inactive"]
-        case "waterSensor":
+        case "water":
             return ["wet","dry"]
         case "lock":
-            return ["unlocked (or unknown)", "locked"]
+            return ["unlocked", "locked"] //TODO: Add "unknown" and other states... UI issues...
         default:
             return ["UNDEFINED"]
+    }
+}
+
+private capabilityName(attributeName) {
+    switch (attributeName) {
+        case ["switch", "lock"]:
+            return attributeName
+        default:
+            return "${attributeName}Sensor"
     }
 }
