@@ -28,6 +28,7 @@ definition(
     namespace: "MFornander",
     author: "Mattias Fornander",
     description: "Display sensor states on HomeSeer WD-200 LEDs",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200status/wd200status-parent.groovy",
     iconUrl: "",
     iconX2Url: ""
 )

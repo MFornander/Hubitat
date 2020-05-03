@@ -29,6 +29,7 @@ definition(
     author: "Mattias Fornander",
     description: "TODO",
     parent: "MFornander:WD200 Status",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200status/wd200status-child.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
