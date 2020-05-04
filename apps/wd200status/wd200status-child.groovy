@@ -14,14 +14,14 @@
  * SOFTWARE.
  *
  * TODO: Documentation
- * 
+ *
  * Versions:
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
 private setVersion() {
     state.name = "WD200 Condition"
-    state.version = "0.0.1"
+    state.version = "0.0.2"
 }
 
 definition(
@@ -84,7 +84,7 @@ def installed() {
     initialize()
 }
 
-def updated() {	
+def updated() {
     logDebug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
@@ -105,7 +105,7 @@ private initialize() {
         case [null, "on", "off"]:
             break
         default:
-            logDebug "${sensorList} ${sensorType} ${atomicState}" 
+            logDebug "${sensorList} ${sensorType} ${atomicState}"
             subscribe(sensorList, sensorType, sensorHandler)
             break
     }
@@ -127,8 +127,14 @@ def getCondition() {
     ]}
 }
 
+def checkVersion(version) {
+    def pass = version == state.version
+    if (!pass) log.error "Parent/Child version mismatch: parent v${version} != child v${state.version}"
+    return pass
+}
+
 private logDebug(msg) {
-    if (parent.debugEnable) { log.debug msg }
+    if (parent.debugEnable) log.debug msg
 }
 
 private attributeValues(attributeName) {
@@ -142,7 +148,7 @@ private attributeValues(attributeName) {
         case "water":
             return ["wet","dry"]
         case "lock":
-            return ["unlocked", "locked"] //TODO: Add "unknown" and other states... UI issues...
+            return ["unlocked", "locked"] //TODO: Add "unknown" and other states... Solve UI issues...
         default:
             return ["UNDEFINED"]
     }

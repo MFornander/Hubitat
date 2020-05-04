@@ -14,14 +14,14 @@
  * SOFTWARE.
  *
  * TODO: Documentation
- * 
+ *
  * Versions:
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
 private setVersion(){
     state.name = "WD200 Status"
-    state.version = "0.0.1"
+    state.version = "0.0.2"
 }
 
 definition(
@@ -36,7 +36,7 @@ definition(
 
 preferences {
     page name: "mainPage", title: "", install: true, uninstall: true
-} 
+}
 
 def installed() {
     logDebug "Installed with settings: ${settings}"
@@ -51,9 +51,7 @@ def updated() {
 
 private initialize() {
     logDebug "There are ${childApps.size()} conditions..."
-    childApps.each {child ->
-        logDebug "Condition: ${child.label}"
-    }
+    childApps.each { child -> logDebug "Condition: ${child.label}" }
 }
 
 def mainPage() {
@@ -77,7 +75,7 @@ def mainPage() {
 
 private installCheck() {
     setVersion()
-    state.appInstalled = app.getInstallationState() 
+    state.appInstalled = app.getInstallationState()
     if (state.appInstalled != 'COMPLETE') {
         section {
             paragraph "Please hit 'Done' to install '${app.label}'"
@@ -86,11 +84,10 @@ private installCheck() {
 }
 
 private addCondition(leds, condition) {
+    if (!condition) return
     logDebug "Add condition ${condition}"
-    if (condition) {
-        if (leds[condition.index] == null || leds[condition.index].priority < condition.priority) {
-            leds[condition.index] = condition
-        }
+    if (!leds[condition.index] || leds[condition.index].priority < condition.priority) {
+        leds[condition.index] = condition
     }
 }
 
@@ -99,20 +96,16 @@ def refreshConditions(newCondition) {
     addCondition(leds, newCondition)
 
     def children = getChildApps()
+    if (children.find { !it.checkVersion(state.version) }) return
+
     logDebug "Refreshing ${children.size()} conditions..."
-    children.each { child ->
-        addCondition(leds, child.getCondition())
-    }
+    children.each { child -> addCondition(leds, child.getCondition()) }
 
     logDebug "Setting LEDs to ${leds}"
-    leds.each { led ->
-        if (led.value) dimmers.setStatusLED(led.key as String, led.value.color as String)
-    }
-    leds.each { led ->
-        if (!led.value) dimmers.setStatusLED(led.key as String, "0")
-    }
+    leds.each { led -> if (led.value) dimmers.setStatusLED(led.key as String, led.value.color as String) }
+    leds.each { led -> if (!led.value) dimmers.setStatusLED(led.key as String, "0") }
 }
 
 private logDebug(msg) {
-    if (debugEnable) { log.debug msg }
+    if (debugEnable) log.debug msg
 }
