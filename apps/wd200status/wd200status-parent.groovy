@@ -21,7 +21,7 @@
 
 private setVersion(){
     state.name = "WD200 Status"
-    state.version = "0.0.2"
+    state.version = "0.0.4"
 }
 
 definition(
@@ -83,27 +83,18 @@ private installCheck() {
   	}
 }
 
-private addCondition(leds, condition) {
-    if (!condition) return
-    logDebug "Add condition ${condition}"
-    if (!leds[condition.index] || leds[condition.index].priority < condition.priority) {
-        leds[condition.index] = condition
-    }
-}
-
-def refreshConditions(newCondition) {
-    def leds = [1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7:null]
-    addCondition(leds, newCondition)
+def refreshConditions() {
+    def leds = ["1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7":null]
 
     def children = getChildApps()
     if (children.find { !it.checkVersion(state.version) }) return
 
     logDebug "Refreshing ${children.size()} conditions..."
-    children.each { child -> addCondition(leds, child.getCondition()) }
+    children.each { child -> child.addCondition(leds) }
 
     logDebug "Setting LEDs to ${leds}"
-    leds.each { led -> if (led.value) dimmers.setStatusLED(led.key as String, led.value.color as String) }
-    leds.each { led -> if (!led.value) dimmers.setStatusLED(led.key as String, "0") }
+    leds.each { led -> if (led.value) dimmers.setStatusLED(led.key, led.value.color) }
+    leds.each { led -> if (!led.value) dimmers.setStatusLED(led.key, "0") }
 }
 
 private logDebug(msg) {
