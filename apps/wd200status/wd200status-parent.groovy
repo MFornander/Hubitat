@@ -1,8 +1,7 @@
 /**
- * ****************  WD200 Status ********************
+ * ****************  WD200 Dashboard ********************
  *
  * MIT License - see full license in repository LICENSE file
- *
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -13,25 +12,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * TODO: Documentation
+ * Description: "Turn your HS-WD200 Dimmer into a mini-dashboard"
+ * Hubitat parent app to be installed along with the "WD200 Condition" child app.
  *
  * Versions:
- *  1.0.0 - 2020-05-xx - Initial release.
+ * 1.0.0 - 2020-05-xx - Initial release.
  */
 
 def getVersion() {
-    "0.0.6"
+    "0.0.7"
 }
 
 definition(
-    name: "WD200 Status",
+    name: "WD200 Dashboard",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Display sensor states on HomeSeer WD200 Dimmer LEDs",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200status/wd200status-parent.groovy",
+    description: "Turn your HS-WD200 Dimmer into a mini-dashboard",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200dashboard/wd200dashboard-parent.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
+
+def getDescription() {
+"""<p>This parent-child app pair allows easy linking of Hubitat sensor states to
+LEDs of your HS-WD200 dimmers.  You can link states such as contact sensors
+open/closed, motion sensors active/inactive, locks locked/unlocked, and more,
+to LEDs of various colors on your dimmers.  Several sensors can "share" an
+LED such that the same LED can show yellow if a door is unlocked and red if
+it's open.
+
+<p>Each set of dimmers can have one or more "Conditions" that link
+sensor states to a specific LED and a specific color.  Conditions also have
+explicit priorities that determine which condition gets to set an LED if
+there is a conflic.  This allows the lock+contact example above to always
+show door open means red, and only show yellow for unlocked if the door is
+closed.
+
+<p>One Status app can control more than one Dimmer such that several WD200
+dimmers can easily show the same status.  However you can also install many
+Status apps if you want two dimmers to show different states.
+
+<p>The current version supports a variety of sensors I need but there are
+many missing.  Make a bugreport or feature request on GitHub and I'll try
+to add it.  However, note that you can use a Virtual Switch in an
+automation such as RuleMachine and add a COndition to it.
+
+<p>The use case and inspiration for this app is my house with nine major
+doors and several ground level windows to the outside.  I wanted to know
+at glance if the doors were closed and locked.  The first version was a
+RuleMachine instance but it was not pretty but more importantly, I wanted
+to learn more Hubitat and Groovy.
+
+<p><b>Note that this is my first Hubitat App and first time using Groovy so
+don't trust it with anything important.</b>"""
+}
 
 preferences {
     page name: "mainPage", title: "", install: true, uninstall: true
@@ -50,7 +84,8 @@ def updated() {
 
 private initialize() {
     logDebug "There are ${childApps.size()} conditions..."
-    childApps.each { child -> logDebug "Condition: ${child.label}" }
+    childApps.each { logDebug "Condition: ${it.label}" }
+    dimmers.each { } // TODO: Verify they are HS-WD200 Dimmers
 }
 
 def mainPage() {
@@ -58,15 +93,16 @@ def mainPage() {
         installCheck()
         if (state.appInstalled == 'COMPLETE') {
             section() {
-                paragraph "<h2>${state.name}</h2>TODO"
+                paragraph '<h2>WD200 Dashboard</h2>"Turn your HS-WD200 Dimmer into a mini-dashboard"'
                 label title: "App Name (optional)", required: false
+                // FIX: Allow only selection of HS-WD200 Dimmers
                 input "dimmers", "capability.switchLevel", title: "Status Dimmers", required: true, multiple: true
                 app name: "anyOpenApp", appName: "WD200 Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             }
             section("Instructions", hideable: true, hidden: true) {
-                paragraph "<b>${state.name} v${state.version}</b>"
-                paragraph "TODO"
+                paragraph "<b>WD200 Dashboard v${getVersion()}</b>"
+                paragraph getDescription().replaceAll("[\r\n]+"," ")
             }
         }
     }

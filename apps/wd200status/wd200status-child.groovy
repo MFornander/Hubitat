@@ -1,8 +1,7 @@
 /**
- * ****************  WD200 Status Condition ********************
+ * ****************  WD200 Condition ********************
  *
  * MIT License - see full license in repository LICENSE file
- *
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -13,23 +12,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * TODO: Documentation
+ * Description: "Turn your HS-WD200 Dimmer into a mini-dashboard"
+ * Hubitat child app to be installed along with the "WD200 Dashboard" parent app.
+ * See parent app for more information.
  *
  * Versions:
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
 def getVersion() {
-    "0.0.6"
+    "0.0.7"
 }
 
 definition(
     name: "WD200 Condition",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "WD200 Status Child App",
-    parent: "MFornander:WD200 Status",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200status/wd200status-child.groovy",
+    description: "WD200 Dashboard Child App",
+    parent: "MFornander:WD200 Dashboard",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200dashboard/wd200dashboard-child.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
