@@ -19,16 +19,15 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
-private setVersion(){
-    state.name = "WD200 Status"
-    state.version = "0.0.4"
+def getVersion() {
+    "0.0.6"
 }
 
 definition(
     name: "WD200 Status",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Display sensor states on HomeSeer WD-200 LEDs",
+    description: "Display sensor states on HomeSeer WD200 Dimmer LEDs",
     importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200status/wd200status-parent.groovy",
     iconUrl: "",
     iconX2Url: ""
@@ -74,7 +73,6 @@ def mainPage() {
 }
 
 private installCheck() {
-    setVersion()
     state.appInstalled = app.getInstallationState()
     if (state.appInstalled != 'COMPLETE') {
         section {
@@ -84,17 +82,20 @@ private installCheck() {
 }
 
 def refreshConditions() {
-    def leds = ["1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7":null]
-
     def children = getChildApps()
-    if (children.find { !it.checkVersion(state.version) }) return
+    def fail = children.find { it.getVersion() != getVersion() }
+    if (fail) {
+        log.error "Version mismatch: parent v${getVersion()} != child v${fail.getVersion()}"
+        return
+    }
 
     logDebug "Refreshing ${children.size()} conditions..."
-    children.each { child -> child.addCondition(leds) }
+    def leds = [:]
+    children*.addCondition(leds)
 
     logDebug "Setting LEDs to ${leds}"
-    leds.each { led -> if (led.value) dimmers.setStatusLED(led.key, led.value.color) }
-    leds.each { led -> if (!led.value) dimmers.setStatusLED(led.key, "0") }
+    (1..7).each { if (leds[it]) dimmers.setStatusLED(it as String, leds[it].color) }
+    (1..7).each { if (!leds[it]) dimmers.setStatusLED(it as String, "0") }
 }
 
 private logDebug(msg) {
