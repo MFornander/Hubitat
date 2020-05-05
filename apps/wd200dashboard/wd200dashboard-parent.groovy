@@ -44,18 +44,19 @@ it's open.
 <p>Each set of dimmers can have one or more "Conditions" that link
 sensor states to a specific LED and a specific color.  Conditions also have
 explicit priorities that determine which condition gets to set an LED if
-there is a conflic.  This allows the lock+contact example above to always
+there is a conflict.  This allows the lock+door example above to always
 show door open means red, and only show yellow for unlocked if the door is
 closed.
 
-<p>One Status app can control more than one Dimmer such that several WD200
-dimmers can easily show the same status.  However you can also install many
-Status apps if you want two dimmers to show different states.
+<p>One Dashboard app can control more than one Dimmer such that several
+WD200 dimmers can show the same status.  However you can also install many
+Dashboard apps if you want two dimmers to show different states.
 
-<p>The current version supports a variety of sensors I need but there are
-many missing.  Make a bugreport or feature request on GitHub and I'll try
-to add it.  However, note that you can use a Virtual Switch in an
-automation such as RuleMachine and add a COndition to it.
+<p>The current version supports a variety of sensors but there are many
+missing.  Make a bugreport or feature request on GitHub and I'll try to
+add it.  However, note that you can use a Virtual Switch in an automation
+such as RuleMachine with any level of complexity and add link a Condition
+to it.
 
 <p>The use case and inspiration for this app is my house with nine major
 doors and several ground level windows to the outside.  I wanted to know
@@ -63,8 +64,8 @@ at glance if the doors were closed and locked.  The first version was a
 RuleMachine instance but it was not pretty but more importantly, I wanted
 to learn more Hubitat and Groovy.
 
-<p><b>Note that this is my first Hubitat App and first time using Groovy so
-don't trust it with anything important.</b>"""
+<p><b>Note that this is my first Hubitat App and first time using Groovy
+so don't trust it with anything important.</b>"""
 }
 
 preferences {
