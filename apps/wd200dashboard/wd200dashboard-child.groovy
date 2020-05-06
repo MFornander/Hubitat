@@ -21,7 +21,7 @@
  */
 
 def getVersion() {
-    "0.0.7"
+    "0.0.8"
 }
 
 definition(
@@ -40,8 +40,8 @@ preferences {
 }
 
 def pageConfig() {
-    dynamicPage(name: "", title: "", install: true, uninstall: true, refreshInterval:0) {
-        section("<b>WD200 Condition</b>") {
+    dynamicPage(name: "", title: "WD200 Condition", install: true, uninstall: true, refreshInterval: 0) {
+        section() {
             label title: "Condition Name", required: true
         }
         section("<b>LED Indicator</b>") {
@@ -91,7 +91,6 @@ def updated() {
 
 def uninstalled() {
     logDebug "Uninstalled with settings: ${settings}"
-    // FIX: Status not updating automatically after removing a condition
     initialize()
 }
 
@@ -100,7 +99,7 @@ private initialize() {
 
     atomicState.active = sensorType == "on"
     switch (sensorType) {
-        case [null, "on", "off"]:
+        case [null, "on"]:
             break
         default:
             logDebug "${sensorList} ${sensorType} ${atomicState}"

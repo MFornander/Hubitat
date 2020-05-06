@@ -20,7 +20,7 @@
  */
 
 def getVersion() {
-    "0.0.7"
+    "0.0.8"
 }
 
 definition(
@@ -69,7 +69,7 @@ so don't trust it with anything important.</b>"""
 }
 
 preferences {
-    page name: "mainPage", title: "", install: true, uninstall: true
+    page name: "mainPage", title: "WD200 Dashboard", install: true, uninstall: true
 }
 
 def installed() {
@@ -86,7 +86,8 @@ def updated() {
 private initialize() {
     logDebug "There are ${childApps.size()} conditions..."
     childApps.each { logDebug "Condition: ${it.label}" }
-    dimmers.each { } // TODO: Verify they are HS-WD200 Dimmers
+    // FIX: Find way to filter out only WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
+    dimmers.findAll { !it.hasCommand("setStatusLED") }.each { log.error "${it.label} is not a HS-WD200 Dimmer" }
 }
 
 def mainPage() {
@@ -94,9 +95,9 @@ def mainPage() {
         installCheck()
         if (state.appInstalled == 'COMPLETE') {
             section() {
-                paragraph '<h2>WD200 Dashboard</h2>"Turn your HS-WD200 Dimmer into a mini-dashboard"'
+                paragraph '"Turn your HS-WD200 Dimmer into a mini-dashboard"'
                 label title: "App Name (optional)", required: false
-                // FIX: Allow only selection of HS-WD200 Dimmers
+                // FIX: Allow only selection of HS-WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
                 input "dimmers", "capability.switchLevel", title: "Status Dimmers", required: true, multiple: true
                 app name: "anyOpenApp", appName: "WD200 Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
@@ -119,6 +120,10 @@ private installCheck() {
 }
 
 def refreshConditions() {
+    runIn(0, doRefreshConditions)
+}
+
+def doRefreshConditions() {
     def children = getChildApps()
     def fail = children.find { it.getVersion() != getVersion() }
     if (fail) {
