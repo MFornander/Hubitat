@@ -12,7 +12,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description: "Turn your HS-WD200 Dimmer into a mini-dashboard"
+ * Description: "Turn your HomeSeer WD200 Dimmers into mini-dashboards"
  * Hubitat child app to be installed along with the "WD200 Dashboard" parent app.
  * See parent app for more information.
  *
@@ -21,7 +21,7 @@
  */
 
 def getVersion() {
-    "0.0.8"
+    "0.0.10"
 }
 
 definition(
@@ -96,16 +96,8 @@ def uninstalled() {
 
 private initialize() {
     logDebug "Initialize with settings:${settings}, state:${state}"
-
-    atomicState.active = sensorType == "on"
-    switch (sensorType) {
-        case [null, "on"]:
-            break
-        default:
-            logDebug "${sensorList} ${sensorType} ${atomicState}"
-            subscribe(sensorList, sensorType, sensorHandler)
-            break
-    }
+    atomicState.active = sensorType == "on" || sensorList.find { it.latestValue(sensorType) == sensorState } != null
+    subscribe(sensorList, sensorType, sensorHandler)
     parent.refreshConditions()
 }
 
