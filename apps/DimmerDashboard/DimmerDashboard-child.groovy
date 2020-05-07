@@ -20,10 +20,12 @@
  *  1.0.0 - 2020-05-xx - Initial release.
  */
 
+/// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.11"
+    "0.0.13"
 }
 
+/// Set app Metadata for the Hub
 definition(
     name: "Dimmer Dashboard Condition",
     namespace: "MFornander",
@@ -35,10 +37,24 @@ definition(
     iconX2Url: ""
 )
 
+/// Defer preference layout to the pageConfig function
 preferences {
     page(name: "pageConfig")
 }
 
+/**
+ * Settings layout function that builds UI to config condition.
+ *
+ * Using dynamicPage to immediately show a list of available sensors of that
+ * type and their possible values.  refreshInterval is zero since no
+ * automatic refresh is needed, only when sensorType is updated.  Depending
+ * on sensorType selection we use the capabilityName and attributeValues
+ * helper functions to limit the selection of that sensorType and show
+ * a list of possible values for that type.
+ *
+ * Sensor type can also be of type "on" which forces that condition on
+ * and allows easy testing.
+ */
 def pageConfig() {
     dynamicPage(name: "", title: "DimmerDashboard Condition", install: true, uninstall: true, refreshInterval: 0) {
         section() {
@@ -48,14 +64,14 @@ def pageConfig() {
             input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", range: "1..7", required: true
             input name: "color", type: "enum", title: "Color", required: true,
                 options: [
-                    1i: "Red",
-                    5i: "Yellow",
-                    2i: "Green",
-                    6i: "Cyan",
-                    3i: "Blue",
-                    4i: "Magenta",
-                    7i: "White",
-                    0i: "Off"
+                    "1": "Red",
+                    "5": "Yellow",
+                    "2": "Green",
+                    "6": "Cyan",
+                    "3": "Blue",
+                    "4": "Magenta",
+                    "7": "White",
+                    "0": "Off"
                 ]
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
         }
@@ -78,45 +94,104 @@ def pageConfig() {
     }
 }
 
+/**
+ * Called after app is initially installed to immediately show the new
+ * condition on the LEDs.
+ */
 def installed() {
     logDebug "Installed with settings: ${settings}"
     initialize()
 }
 
+/**
+ * Called after any of the configuration settings are changed to allow
+ * immediate changes to the LEDs.
+ */
 def updated() {
     logDebug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
 }
 
+/**
+ * Called when app is uninstalled since we may have to turn off the LED this
+ * condition was using, or allow a different condition with lower priority
+ * to now show its color selection.
+ */
 def uninstalled() {
     logDebug "Uninstalled with settings: ${settings}"
     initialize()
 }
 
+/**
+ * Shared helper function used by installed, updated, and uninstalled.
+ *
+ * All three functions above have a common requirement that the LED states
+ * need to be updated.  The atomicState.active is updated for this condition
+ * to reflect the the current settings.  Depending on sensors selected in
+ * the configuration UI, we subscribe to those sensors.
+ *
+ * Finally we also trigger a refresh of the parent app.  This causes a full
+ * query of all conditions since a change in priority, active state, or even
+ * complte removal of this condition may cause another condition to be shown
+ * if we are now inactive or lower priority.  It may be possible to cache
+ * this better in the parent but...
+ *
+ * "There are only two hard things in Computer Science: cache invalidation
+ * and naming things."" -- Phil Karlton
+ */
 private initialize() {
     logDebug "Initialize with settings:${settings}, state:${state}"
+
+    // Condition is active if 'on', or if the sensor's value matches the
+    // selected sensorState in the settings.  sensorList is an array type
+    // since earlier development versions allowed multiple sensors but I
+    // backed off for the initial release to keep it simple.  With multiple
+    // selection I would need a UI to select if the logic is AND or OR for
+    // many sensors.
     atomicState.active = sensorType == "on" || sensorList.find { it.latestValue(sensorType) == sensorState } != null
+
     subscribe(sensorList, sensorType, sensorHandler)
-    parent.refreshConditions()
+    parent.refreshDashboard()
 }
 
+/**
+ * Function called if a sensor was selected in the UI and it detected a
+ * change. Any change triggers a full refresh on the parent for it to
+ * figure out the new correct LED dashboard.
+ */
 def sensorHandler(evt) {
     atomicState.active = evt.value == sensorState
     logDebug "sensorHandler evt.value:${evt.value}, state:${atomicState}, sensorState:${sensorState}"
-    parent.refreshConditions()
+    parent.refreshDashboard()
 }
 
+/**
+ * Update function used by the parent's refreshConditions() function.
+ * It is given a map of the new LED dashboard and replaces the map slot
+ * with this condition's color if the condition is active and has a higher
+ * priority than the current color, if any.
+*/
 def addCondition(leds) {
-    logDebug "addCondition ${atomicState} ${settings}"
+    logDebug "Condition ${label}: ${atomicState} ${settings}"
     if (!atomicState.active) return
-    if (!leds[index as int] || (leds[index as int].priority < priority)) leds[index as int] = [color: color, priority: priority]
+    if (!leds[index as int] || (leds[index as int].priority < priority))
+        leds[index as int] = [color: color, priority: priority]
 }
 
+/**
+ * Internal logging function that tracks the parent debug setting to
+ * allow debugging of an app and all its atached child apps.
+ */
 private logDebug(msg) {
     if (parent.debugEnable) log.debug msg
 }
 
+/**
+ * Internal helper function providing lists of possible values given
+ * a specific attribute name.  This allows the config UI to dynamically
+ * show a list of possible sensor values depending on sensor type selection.
+ */
 private attributeValues(attributeName) {
     switch (attributeName) {
         case "switch":
@@ -134,6 +209,10 @@ private attributeValues(attributeName) {
     }
 }
 
+/**
+ * Internal helper function allowing the config UI to filter the selection
+ * of devices depending on sensor type selection.
+ */
 private capabilityName(attributeName) {
     switch (attributeName) {
         case ["switch", "lock"]:
