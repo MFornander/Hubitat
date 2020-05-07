@@ -1,5 +1,5 @@
 /**
- * ****************  WD200 Condition ********************
+ * ****************  Dimmer Dashboard Condition ********************
  *
  * MIT License - see full license in repository LICENSE file
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
@@ -12,8 +12,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description: "Turn your HomeSeer WD200 Dimmers into mini-dashboards"
- * Hubitat child app to be installed along with the "WD200 Dashboard" parent app.
+ * Description: "Turn your LED Dimmers into mini-dashboards"
+ * Hubitat child app to be installed along with the "DimmerDashboard" parent app.
  * See parent app for more information.
  *
  * Versions:
@@ -21,16 +21,16 @@
  */
 
 def getVersion() {
-    "0.0.10"
+    "0.0.11"
 }
 
 definition(
-    name: "WD200 Condition",
+    name: "Dimmer Dashboard Condition",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "WD200 Dashboard Child App",
-    parent: "MFornander:WD200 Dashboard",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200dashboard/wd200dashboard-child.groovy",
+    description: "Dimmer Dashboard Child App",
+    parent: "MFornander:Dimmer Dashboard",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/DimmerDashboard/DimmerDashboard-child.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
@@ -40,7 +40,7 @@ preferences {
 }
 
 def pageConfig() {
-    dynamicPage(name: "", title: "WD200 Condition", install: true, uninstall: true, refreshInterval: 0) {
+    dynamicPage(name: "", title: "DimmerDashboard Condition", install: true, uninstall: true, refreshInterval: 0) {
         section() {
             label title: "Condition Name", required: true
         }

@@ -1,5 +1,5 @@
 /**
- * ****************  WD200 Dashboard ********************
+ * ****************  Dimmer Dashboard ********************
  *
  * MIT License - see full license in repository LICENSE file
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
@@ -12,23 +12,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description: "Turn your HomeSeer WD200 Dimmers into mini-dashboards"
- * Hubitat parent app to be installed along with the "WD200 Condition" child app.
+ * Description: "Turn your LED status dimmers into mini-dashboards"
+ * Hubitat parent app to be installed along with the "Dimmer Dashboard Condition" child app.
  *
  * Versions:
  * 1.0.0 - 2020-05-xx - Initial release.
  */
 
 def getVersion() {
-    "0.0.10"
+    "0.0.11"
 }
 
 definition(
-    name: "WD200 Dashboard",
+    name: "Dimmer Dashboard",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Turn your HomeSeer WD200 Dimmers into mini-dashboards",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/wd200dashboard/wd200dashboard-parent.groovy",
+    description: "Turn your LED status dimmers into mini-dashboards",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/DimmerDashboard/DimmerDashboard-parent.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
@@ -69,7 +69,7 @@ so don't trust it with anything important.</b>"""
 }
 
 preferences {
-    page name: "mainPage", title: "WD200 Dashboard", install: true, uninstall: true
+    page name: "mainPage", title: "Dimmer Dashboard", install: true, uninstall: true
 }
 
 def installed() {
@@ -95,15 +95,15 @@ def mainPage() {
         installCheck()
         if (state.appInstalled == 'COMPLETE') {
             section() {
-                paragraph '"Turn your HomeSeer WD200 Dimmers into mini-dashboards"'
+                paragraph '"Turn your LED status dimmers into mini-dashboards"'
                 label title: "App Name (optional)", required: false
                 // TODO: Allow only selection of WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
                 input "dimmers", "capability.switchLevel", title: "Dimmers", required: true, multiple: true
-                app name: "anyOpenApp", appName: "WD200 Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
+                app name: "anyOpenApp", appName: "Dimmer Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
                 input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             }
             section("Instructions", hideable: true, hidden: true) {
-                paragraph "<b>WD200 Dashboard v${getVersion()}</b>"
+                paragraph "<b>Dimmer Dashboard v${getVersion()}</b>"
                 paragraph getDescription().replaceAll("[\r\n]+"," ")
             }
         }
