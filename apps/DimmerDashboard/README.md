@@ -1,4 +1,4 @@
-# WD200 Status
+# DimmerDashboard
 
 Hubitat app that links sensor states to HomeSeer WD200 Dimmer LEDs.
 
