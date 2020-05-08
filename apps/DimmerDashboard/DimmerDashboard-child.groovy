@@ -22,7 +22,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.13"
+    "0.0.14"
 }
 
 /// Set app Metadata for the Hub
@@ -51,9 +51,6 @@ preferences {
  * on sensorType selection we use the capabilityName and attributeValues
  * helper functions to limit the selection of that sensorType and show
  * a list of possible values for that type.
- *
- * Sensor type can also be of type "on" which forces that condition on
- * and allows easy testing.
  */
 def pageConfig() {
     dynamicPage(name: "", title: "DimmerDashboard Condition", install: true, uninstall: true, refreshInterval: 0) {
@@ -78,16 +75,15 @@ def pageConfig() {
         section("<b>Input</b>") {
             input name: "sensorType", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
                 options: [
-                    "on": "Always On",
                     "switch": "Switch",
                     "contact": "Door/Window Sensor",
                     "lock": "Lock",
                     "motion": "Motion Sensor",
                     "water": "Water Sensor"
                 ]
-            if (sensorType && sensorType != "on") {
-                input name: "sensorList", type: "capability.${capabilityName(sensorType)}", title: "Sensor", required: true, multiple: false
-                input name: "sensorState", type: "enum", title: "State", required: true,
+            if (sensorType) {
+                input name: "sensorList", type: "capability.${capabilityName(sensorType)}", title: "Sensors (any will trigger)", required: true, multiple: true
+                input name: "sensorState", type: "enum", title: "State", required: true, multiple: true,
                     options: attributeValues(sensorType)
             }
         }
@@ -142,15 +138,7 @@ def uninstalled() {
  */
 private initialize() {
     logDebug "Initialize with settings:${settings}, state:${state}"
-
-    // Condition is active if 'on', or if the sensor's value matches the
-    // selected sensorState in the settings.  sensorList is an array type
-    // since earlier development versions allowed multiple sensors but I
-    // backed off for the initial release to keep it simple.  With multiple
-    // selection I would need a UI to select if the logic is AND or OR for
-    // many sensors.
-    atomicState.active = sensorType == "on" || sensorList.find { it.latestValue(sensorType) == sensorState } != null
-
+    updateActive()
     subscribe(sensorList, sensorType, sensorHandler)
     parent.refreshDashboard()
 }
@@ -161,9 +149,17 @@ private initialize() {
  * figure out the new correct LED dashboard.
  */
 def sensorHandler(evt) {
-    atomicState.active = evt.value == sensorState
+    updateActive()
     logDebug "sensorHandler evt.value:${evt.value}, state:${atomicState}, sensorState:${sensorState}"
     parent.refreshDashboard()
+}
+
+/**
+ * Condition is active if any of the sensor values match any of the
+ * sensorState in the settings.
+ */
+private updateActive() {
+    atomicState.active = sensorList.any { sensorIt -> sensorState.any { it == sensorIt.latestValue(sensorType) } }
 }
 
 /**
@@ -203,7 +199,7 @@ private attributeValues(attributeName) {
         case "water":
             return ["wet","dry"]
         case "lock":
-            return ["unlocked", "locked"] // TODO: Add "unknown" and other states... Solve UI issues...
+            return ["unlocked", "unlocked with timeout", "unknown", "locked"]
         default:
             return ["UNDEFINED"]
     }
