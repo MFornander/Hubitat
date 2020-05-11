@@ -21,7 +21,7 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.19"
+    "0.0.20"
 }
 
 // Set app Metadata for the Hub
@@ -64,8 +64,8 @@ many Dashboard apps if you want two dimmers to show different states.
 <p>The current version supports a variety of sensors but there are many
 missing.  Make a bugreport or feature request on GitHub and I'll try to
 add it.  However, note that you can use a Virtual Switch in an
-automation such as RuleMachine with any level of complexity and add
-link a Condition to it.
+automation such as RuleMachine with any level of complexity and link a
+Condition to it.
 
 <p>The use case and inspiration for this app is my house with nine major
 doors and several ground level windows to the outside.  I wanted to know
@@ -141,13 +141,13 @@ def mainPage() {
     checkNewVersion()
     dynamicPage(name: "mainPage") {
         section() {
-            paragraph '"Turn your LED status dimmers into mini-dashboards"'
-            label title: "App Name (optional)", required: false
+            paragraph '<i>"Turn your LED status dimmers into mini-dashboards"</i>'
+            label title: "Name", required: false
             // TODO: Allow only selection of WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
             input "dimmers", "capability.switchLevel", title: "HomeSeer WD200+ Dimmers", required: true, multiple: true, submitOnChange: true
             app name: "anyOpenApp", appName: "Dimmer Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
-            if (state.versionMessage) paragraph state.versionMessage
+            paragraph state.versionMessage
         }
         section("Instructions", hideable: true, hidden: true) {
             paragraph "<b>Dimmer Dashboard v${getVersion()}</b>"
@@ -239,12 +239,15 @@ private compareTo(version) {
  *
  * Download a version file and set state.versionMessage if there is a newer
  * version available.  This message is displayed in the settings UI.
+ * TODO: Only do this once a day
  */
 private checkNewVersion() {
     state.versionMessage = null
     def params = [
         uri: "https://raw.githubusercontent.com",
-        path: "MFornander/Hubitat/master/apps/DimmerDashboard/version",
+        path: "MFornander/Hubitat/master/apps/DimmerDashboard/version.json",
+        requestContentType: "application/json",
+		contentType: "application/json",
         timeout: 3
     ]
     try {
