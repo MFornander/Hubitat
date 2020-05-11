@@ -21,7 +21,7 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.16"
+    "0.0.19"
 }
 
 // Set app Metadata for the Hub
@@ -138,6 +138,7 @@ private initialize() {
  * read it once and then it should be out of the way.
  */
 def mainPage() {
+    checkNewVersion()
     dynamicPage(name: "mainPage") {
         section() {
             paragraph '"Turn your LED status dimmers into mini-dashboards"'
@@ -146,6 +147,7 @@ def mainPage() {
             input "dimmers", "capability.switchLevel", title: "HomeSeer WD200+ Dimmers", required: true, multiple: true, submitOnChange: true
             app name: "anyOpenApp", appName: "Dimmer Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
+            if (state.versionMessage) paragraph state.versionMessage
         }
         section("Instructions", hideable: true, hidden: true) {
             paragraph "<b>Dimmer Dashboard v${getVersion()}</b>"
@@ -207,6 +209,60 @@ def doRefreshDashboard() {
     logDebug "Setting LEDs to ${leds}"
     (1..7).each { if (leds[it]) dimmers.setStatusLED(it as String, leds[it].color) }
     (1..7).each { if (!leds[it]) dimmers.setStatusLED(it as String, "0") }
+}
+
+/**
+ * Internal SemVer comparator function, now with spaceships.
+ *
+ * Return 1 if the given version is newer than current, 0 if the same, or -1 if older
+ * according to http://semver.org
+ */
+private compareTo(version) {
+    def newVersion = version.tokenize(".")*.toInteger()
+    def oldVersion = getVersion().tokenize(".")*.toInteger()
+    logDebug "Version new:${newVersion} old:${oldVersion}"
+    if (newVersion.size != 3) log.error "Illegal version"
+
+    if (newVersion[0] == oldVersion[0]) {
+        if (newVersion[1] == oldVersion[1]) {
+            newVersion[2] <=> oldVersion[2]
+        } else {
+            newVersion[1] <=> oldVersion[1]
+        }
+    } else {
+        newVersion[0] <=> oldVersion[0]
+    }
+}
+
+/**
+ * Internal version check function.
+ *
+ * Download a version file and set state.versionMessage if there is a newer
+ * version available.  This message is displayed in the settings UI.
+ */
+private checkNewVersion() {
+    state.versionMessage = null
+    def params = [
+        uri: "https://raw.githubusercontent.com",
+        path: "MFornander/Hubitat/master/apps/DimmerDashboard/version",
+        timeout: 3
+    ]
+    try {
+        httpGet(params) { response ->
+            logDebug "checkNewVersion response data: ${response.data}"
+            switch (compareTo(response.data)) {
+                case 1:
+                    state.versionMessage = "(New v${response.data} available, current is v${getVersion()})"
+                    break
+                case 0:
+                    break
+                default:
+                    log.warn "Received older v${response.data} while current is v${getVersion()}"
+            }
+        }
+    } catch (e) {
+        log.error "checkNewVersion error: $e"
+    }
 }
 
 /**
