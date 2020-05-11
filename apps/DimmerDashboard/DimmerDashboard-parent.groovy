@@ -246,8 +246,7 @@ private checkNewVersion() {
     def params = [
         uri: "https://raw.githubusercontent.com",
         path: "MFornander/Hubitat/master/apps/DimmerDashboard/version.json",
-        requestContentType: "application/json",
-		contentType: "application/json",
+        contentType: "application/json",
         timeout: 3
     ]
     try {
@@ -260,7 +259,7 @@ private checkNewVersion() {
                 case 0:
                     break
                 default:
-                    log.warn "Received older v${response.data} while current is v${getVersion()}"
+                    log.warn "GitHub version is older v${response.data} than current v${getVersion()}"
             }
         }
     } catch (e) {
