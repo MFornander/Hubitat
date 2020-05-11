@@ -22,7 +22,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.14"
+    "0.0.16"
 }
 
 /// Set app Metadata for the Hub
@@ -58,7 +58,6 @@ def pageConfig() {
             label title: "Condition Name", required: true
         }
         section("<b>LED Indicator</b>") {
-            input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", range: "1..7", required: true
             input name: "color", type: "enum", title: "Color", required: true,
                 options: [
                     "1": "Red",
@@ -70,6 +69,7 @@ def pageConfig() {
                     "7": "White",
                     "0": "Off"
                 ]
+            input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
         }
         section("<b>Input</b>") {
@@ -169,7 +169,7 @@ private updateActive() {
  * priority than the current color, if any.
 */
 def addCondition(leds) {
-    logDebug "Condition ${label}: ${atomicState} ${settings}"
+    logDebug "Condition ${app.label}: ${atomicState} ${settings}"
     if (!atomicState.active) return
     if (!leds[index as int] || (leds[index as int].priority < priority))
         leds[index as int] = [color: color, priority: priority]
