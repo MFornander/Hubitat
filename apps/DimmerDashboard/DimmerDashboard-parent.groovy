@@ -21,7 +21,7 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.20"
+    "0.0.21"
 }
 
 // Set app Metadata for the Hub
@@ -44,11 +44,12 @@ definition(
  */
 private getDescription() {
 """<p>This parent-child app pair allows easy linking of Hubitat sensor
-states to LEDs of your HomeSeer HS-WD200 dimmers.  You can link states
-such as contact sensors open/closed, motion sensors active/inactive,
-locks locked/unlocked, and more, to LEDs of various colors on your
-dimmers.  Several sensors can "share" an LED such that the same LED
-can show yellow if a door is unlocked and red if it's open.
+states to LEDs of your HomeSeer HS-WD200 dimmers or Inovelli Gen2
+switches or dimmers.  You can link states such as contact sensors
+open/closed, motion sensors active/inactive, locks locked/unlocked,
+and more, to LEDs of various colors on your switch/dimmer.  Several
+sensors can "share" an LED such that the same LED can show yellow
+if a door is unlocked and red if it's open.
 
 <p>Each set of dimmers can have one or more "Conditions" that link
 sensor states to a specific LED and a specific color.  Conditions also
@@ -58,8 +59,20 @@ to always show door open means red, and only show yellow for unlocked
 if the door is closed.
 
 <p>One Dashboard app can control more than one Dimmer such that several
-WD200 dimmers can show the same status.  However you can also install
-many Dashboard apps if you want two dimmers to show different states.
+switches and dimmers can show the same status.  However you can also
+install many Dashboard apps if you want two dimmers to show different
+states.
+
+<p>HomeSeer HS-WD200+ supports seven individually controllable LEDs
+while the Inovelli Gen2 switch/dimmer can only be controlled as one.
+You can have both types of dimmers share the same dashboard but the
+Inovelli will only display index 1.  A dashboard with an important
+notification can use index 1 such that both types can show that
+conditon and use index 2 though 7 for less urgen conditions that are
+only displayed on HomeSeers.  ALso note tha as of May 12 2020, the
+Inovelli doesn't support LED saturation in notifications so the color
+white cannot be set.  Bug their support to add full hue, satuation,
+brightness support in notifications.
 
 <p>The current version supports a variety of sensors but there are many
 missing.  Make a bugreport or feature request on GitHub and I'll try to
@@ -109,8 +122,6 @@ def updated() {
  */
 private initialize() {
     logDebug "There are ${childApps.size()} conditions: ${childApps.label}"
-    // TODO: Find way to filter out only WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
-    dimmers.findAll { !it.hasCommand("setStatusLED") }.each { log.error "${it.label} is not a HS-WD200 Dimmer" }
     doRefreshDashboard()
 }
 
@@ -141,10 +152,10 @@ def mainPage() {
     checkNewVersion()
     dynamicPage(name: "mainPage") {
         section() {
-            paragraph '<i>"Turn your LED status dimmers into mini-dashboards"</i>'
+            paragraph '<i>"Turn your LED status switches into mini-dashboards"</i>'
             label title: "Name", required: false
-            // TODO: Allow only selection of WD200 Dimmers (https://community.hubitat.com/t/device-specific-inputs/36734/7)
-            input "dimmers", "capability.switchLevel", title: "HomeSeer WD200+ Dimmers", required: true, multiple: true, submitOnChange: true
+            // TODO: Allow only selection of Inovelli/HomeSeer switches (https://community.hubitat.com/t/device-specific-inputs/36734/7)
+            input "dimmers", "capability.switch", title: "Switches (HomeSeer or Inovelli)", required: true, multiple: true, submitOnChange: true
             app name: "anyOpenApp", appName: "Dimmer Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             paragraph state.versionMessage
@@ -192,7 +203,7 @@ def refreshDashboard() {
  *
  * TODO: Optimize by storing the led state between calls and only call
  * setStatusLeED if different from last time.  Not done since most of the
- * time, this function is called becuase something did change but that
+ * time, this function is called because something did change but that
  * could be a low priority condition that untimately did not change the
  * dashboard output.
  */
@@ -206,13 +217,61 @@ def doRefreshDashboard() {
     def leds = [:]
     children*.addCondition(leds)
 
-    logDebug "Setting LEDs to ${leds}"
-    (1..7).each { if (leds[it]) dimmers.setStatusLED(it as String, leds[it].color) }
-    (1..7).each { if (!leds[it]) dimmers.setStatusLED(it as String, "0") }
+    dimmers.each { device ->
+        (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it].color) }
+        (1..7).each { if (!leds[it]) setStatusLED(device, it, "Off") }
+    }
 }
 
 /**
- * Internal SemVer comparator function, now with spaceships.
+ * Internal LED control function for both HomeSeer and Inovelli.
+ *
+ * Both the HomeSeer dimmer and Inovelli dimmer/switch support setting the LED(s)
+ * using their cown configuration commands but they are quite different.
+ * This function provides abstraction to treat them as they both support the
+ * SetStatusLED command and simplifies dashboard updating.
+ */
+private setStatusLED(device, index, color) {
+    if (device.hasCommand("setStatusLED")) {
+        // HomeSeer HS-WD200+ dimmer (7 controllable leds)
+        switch(color) {
+            case "Red":     device.setStatusLED(index as String, "1"); break
+            case "Yellow":  device.setStatusLED(index as String, "5"); break
+            case "Green":   device.setStatusLED(index as String, "2"); break
+            case "Cyan":    device.setStatusLED(index as String, "6"); break
+            case "Blue":    device.setStatusLED(index as String, "3"); break
+            case "Magenta": device.setStatusLED(index as String, "4"); break
+            case "White":   device.setStatusLED(index as String, "7"); break
+            case "Off":     device.setStatusLED(index as String, "0"); break
+            default:        log.error "Illegal color: ${color}"; break
+        }
+    } else if (device.hasCommand("startNotification")) {
+        // Inovelli Gen2 switch or dimmer (1 controllable led)
+        if (index == 1) {
+            long baseValue = 0x01ffff00 // Solid=01, Bright=FF, Forever=FF, Hue=00
+            long hueIncrement = 256/6
+            switch (color) {
+                case "Red":     device.startNotification(baseValue | ((256/6*0) as long)); break
+                case "Yellow":  device.startNotification(baseValue | ((256/6*1) as long)); break
+                case "Green":   device.startNotification(baseValue | ((256/6*2) as long)); break
+                case "Cyan":    device.startNotification(baseValue | ((256/6*3) as long)); break
+                case "Blue":    device.startNotification(baseValue | ((256/6*4) as long)); break
+                case "Magenta": device.startNotification(baseValue | ((256/6*5) as long)); break
+                case "White":
+                    device.startNotification(baseValue); // Red
+                    log.error "${device.label}: Inovelli doesn't support LED white (ask their support for 'startNotification saturation')"
+                    break
+                case "Off":     device.stopNotification(); break
+                default:        log.error "Illegal color: ${color}"; break
+            }
+        }
+    } else {
+        log.error "${device.label} is not a HomeSeer or Inovelli (2020-03-27 or later driver) device with LED capability"
+    }
+}
+
+/**
+ * Internal SemVer comparator function, with fancy spaceships.
  *
  * Return 1 if the given version is newer than current, 0 if the same, or -1 if older
  * according to http://semver.org
@@ -263,7 +322,7 @@ private checkNewVersion() {
             }
         }
     } catch (e) {
-        log.error "checkNewVersion error: $e"
+        log.error "checkNewVersion error: ${e}"
     }
 }
 

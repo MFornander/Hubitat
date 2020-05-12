@@ -22,7 +22,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.20"
+    "0.0.21"
 }
 
 /// Set app Metadata for the Hub
@@ -59,17 +59,8 @@ def pageConfig() {
         }
         section("<b>LED Indicator</b>") {
             input name: "color", type: "enum", title: "Color", required: true,
-                options: [
-                    "1": "Red",
-                    "5": "Yellow",
-                    "2": "Green",
-                    "6": "Cyan",
-                    "3": "Blue",
-                    "4": "Magenta",
-                    "7": "White",
-                    "0": "Off"
-                ]
-            input name: "index", type: "number", title: "Index (1-7:bottom to top LED)", defaultValue: "1", range: "1..7", required: true
+                options: ["Red", "Yellow", "Green", "Cyan", "Blue", "Magenta", "White", "Off"]
+            input name: "index", type: "number", title: "Index (1-7:bottom to top LED on HomeSeer WD200+)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
         }
         section("<b>Input</b>") {
