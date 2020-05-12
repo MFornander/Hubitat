@@ -21,7 +21,7 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.22"
+    "0.0.23"
 }
 
 // Set app Metadata for the Hub
@@ -264,18 +264,18 @@ private setStatusLED(device, index, color) {
  */
 private compareTo(version) {
     def newVersion = version.tokenize(".")*.toInteger()
-    def oldVersion = getVersion().tokenize(".")*.toInteger()
-    logDebug "Version new:${newVersion} old:${oldVersion}"
+    def currentVersion = getVersion().tokenize(".")*.toInteger()
+    logDebug "Version new:${newVersion} current:${currentVersion}"
     if (newVersion.size != 3) log.error "Illegal version"
 
-    if (newVersion[0] == oldVersion[0]) {
-        if (newVersion[1] == oldVersion[1]) {
-            newVersion[2] <=> oldVersion[2]
+    if (newVersion[0] == currentVersion[0]) {
+        if (newVersion[1] == currentVersion[1]) {
+            newVersion[2] <=> currentVersion[2]
         } else {
-            newVersion[1] <=> oldVersion[1]
+            newVersion[1] <=> currentVersion[1]
         }
     } else {
-        newVersion[0] <=> oldVersion[0]
+        newVersion[0] <=> currentVersion[0]
     }
 }
 
