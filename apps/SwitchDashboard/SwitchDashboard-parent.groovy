@@ -1,5 +1,5 @@
 /**
- * ****************  Dimmer Dashboard ********************
+ * ****************  Switch Dashboard ********************
  *
  * MIT License - see full license in repository LICENSE file
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
@@ -12,8 +12,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description: "Turn your LED status dimmers into mini-dashboards"
- * Hubitat parent app to be installed along with the "Dimmer Dashboard Condition" child app.
+ * Description: "Turn your LED status switches into mini-dashboards"
+ * Hubitat parent app to be installed with "Switch Dashboard Condition" child app.
  *
  * Versions:
  * 1.0.0 - 2020-05-xx - Initial release.
@@ -21,16 +21,16 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.21"
+    "0.0.22"
 }
 
 // Set app Metadata for the Hub
 definition(
-    name: "Dimmer Dashboard",
+    name: "Switch Dashboard",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Turn your LED status dimmers into mini-dashboards",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/DimmerDashboard/DimmerDashboard-parent.groovy",
+    description: "Turn your LED status switches into mini-dashboards",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-parent.groovy",
     iconUrl: "",
     iconX2Url: "",
     singleInstance: false
@@ -44,7 +44,7 @@ definition(
  */
 private getDescription() {
 """<p>This parent-child app pair allows easy linking of Hubitat sensor
-states to LEDs of your HomeSeer HS-WD200 dimmers or Inovelli Gen2
+states to LEDs of your HomeSeer HS-WD200 dimmers and Inovelli Gen2
 switches or dimmers.  You can link states such as contact sensors
 open/closed, motion sensors active/inactive, locks locked/unlocked,
 and more, to LEDs of various colors on your switch/dimmer.  Several
@@ -68,11 +68,11 @@ while the Inovelli Gen2 switch/dimmer can only be controlled as one.
 You can have both types of dimmers share the same dashboard but the
 Inovelli will only display index 1.  A dashboard with an important
 notification can use index 1 such that both types can show that
-conditon and use index 2 though 7 for less urgen conditions that are
-only displayed on HomeSeers.  ALso note tha as of May 12 2020, the
+condition and use index 2 through 7 for less urgent conditions that are
+only displayed on HomeSeers.  Also note that as of May 12 2020, the
 Inovelli doesn't support LED saturation in notifications so the color
-white cannot be set.  Bug their support to add full hue, satuation,
-brightness support in notifications.
+"White" cannot be set.  Bug their support to add full HSB (hue, satuation,
+brightness) capabilities in startNotification.
 
 <p>The current version supports a variety of sensors but there are many
 missing.  Make a bugreport or feature request on GitHub and I'll try to
@@ -92,7 +92,7 @@ so don't trust it with anything important.</b>"""
 
 /// Defer to mainPage() function to declare the preference UI
 preferences {
-    page name: "mainPage", title: "Dimmer Dashboard", install: true, uninstall: true
+    page name: "mainPage", title: "Switch Dashboard", install: true, uninstall: true
 }
 
 /**
@@ -100,7 +100,7 @@ preferences {
  */
 def installed() {
     logDebug "Installed with settings: ${settings}"
-    initialize()
+    doRefreshDashboard()
 }
 
 /**
@@ -108,20 +108,6 @@ def installed() {
  */
 def updated() {
     logDebug "Updated with settings: ${settings}"
-    initialize()
-}
-
-/**
- * Shared helper function used by installed and updated functions.
- *
- * For now it just logs various states and checks if the dimmers selected
- * are actually HS-WD200+ dimmers.  It is possible to show lists of devices
- * based on either capbility or device name.  Ideally the UI would only
- * show a list of usable dimmers but until I figure out how to create
- * a usable input filter, I just log the illegal dimmers here,
- */
-private initialize() {
-    logDebug "There are ${childApps.size()} conditions: ${childApps.label}"
     doRefreshDashboard()
 }
 
@@ -155,13 +141,13 @@ def mainPage() {
             paragraph '<i>"Turn your LED status switches into mini-dashboards"</i>'
             label title: "Name", required: false
             // TODO: Allow only selection of Inovelli/HomeSeer switches (https://community.hubitat.com/t/device-specific-inputs/36734/7)
-            input "dimmers", "capability.switch", title: "Switches (HomeSeer or Inovelli)", required: true, multiple: true, submitOnChange: true
-            app name: "anyOpenApp", appName: "Dimmer Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
+            input "devices", "capability.switch", title: "Switches (only HomeSeer WD200+ or Inovelli Gen2)", required: true, multiple: true, submitOnChange: true
+            app name: "anyOpenApp", appName: "Switch Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             paragraph state.versionMessage
         }
         section("Instructions", hideable: true, hidden: true) {
-            paragraph "<b>Dimmer Dashboard v${getVersion()}</b>"
+            paragraph "<b>Switch Dashboard v${getVersion()}</b>"
             // Strip newlines to allow the description text to flow naturally
             paragraph getDescription().replaceAll("[\r\n]+"," ")
         }
@@ -197,7 +183,7 @@ def refreshDashboard() {
  * In the end, all conditions have had their say and the leds map now
  * contains the intended color for each LED slot.  We first turn on the LEDs
  * that should be on and then after that, turn off the ones that should be
- * off.  This is to prevent a condition where the dimmer would temporarily
+ * off.  This is to prevent a condition where the WD200 would temporarily
  * enter state where all LEDs are off and flash the current dimmer level
  * before setting LEDs again.
  *
@@ -217,7 +203,7 @@ def doRefreshDashboard() {
     def leds = [:]
     children*.addCondition(leds)
 
-    dimmers.each { device ->
+    devices.each { device ->
         (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it].color) }
         (1..7).each { if (!leds[it]) setStatusLED(device, it, "Off") }
     }
@@ -304,7 +290,7 @@ private checkNewVersion() {
     state.versionMessage = null
     def params = [
         uri: "https://raw.githubusercontent.com",
-        path: "MFornander/Hubitat/master/apps/DimmerDashboard/version.json",
+        path: "MFornander/Hubitat/master/apps/SwitchDashboard/version.json",
         contentType: "application/json",
         timeout: 3
     ]

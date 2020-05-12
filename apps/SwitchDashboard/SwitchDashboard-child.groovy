@@ -1,5 +1,5 @@
 /**
- * ****************  Dimmer Dashboard Condition ********************
+ * ****************  Switch Dashboard Condition ********************
  *
  * MIT License - see full license in repository LICENSE file
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
@@ -12,8 +12,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description: "Turn your LED Dimmers into mini-dashboards"
- * Hubitat child app to be installed along with the "DimmerDashboard" parent app.
+ * Description: "Turn your LED switches into mini-dashboards"
+ * Hubitat child app to be installed with "Switch Dashboard" parent app.
  * See parent app for more information.
  *
  * Versions:
@@ -22,17 +22,17 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.21"
+    "0.0.22"
 }
 
 /// Set app Metadata for the Hub
 definition(
-    name: "Dimmer Dashboard Condition",
+    name: "Switch Dashboard Condition",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Dimmer Dashboard Child App",
-    parent: "MFornander:Dimmer Dashboard",
-    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/DimmerDashboard/DimmerDashboard-child.groovy",
+    description: "Switch Dashboard Child App",
+    parent: "MFornander:Switch Dashboard",
+    importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-child.groovy",
     iconUrl: "",
     iconX2Url: ""
 )
@@ -53,7 +53,7 @@ preferences {
  * a list of possible values for that type.
  */
 def pageConfig() {
-    dynamicPage(name: "", title: "DimmerDashboard Condition", install: true, uninstall: true, refreshInterval: 0) {
+    dynamicPage(name: "", title: "Switch Dashboard Condition", install: true, uninstall: true, refreshInterval: 0) {
         section() {
             label title: "Condition Name", required: true
         }
@@ -147,7 +147,9 @@ def sensorHandler(evt) {
 
 /**
  * Condition is active if any of the sensor values match any of the
- * sensorState in the settings.
+ * sensorState in the settings.  atomicState is used since the parent
+ * will read the value immedately and a regular state much have some
+ * kind of cache since it gives old values to the parent.
  */
 private updateActive() {
     atomicState.active = sensorList.any { sensorIt -> sensorState.any { it == sensorIt.latestValue(sensorType) } }
