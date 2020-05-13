@@ -21,7 +21,7 @@
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.23"
+    "0.0.24"
 }
 
 // Set app Metadata for the Hub
@@ -187,17 +187,15 @@ def refreshDashboard() {
  * enter state where all LEDs are off and flash the current dimmer level
  * before setting LEDs again.
  *
- * TODO: Optimize by storing the led state between calls and only call
- * setStatusLeED if different from last time.  Not done since most of the
- * time, this function is called because something did change but that
- * could be a low priority condition that untimately did not change the
- * dashboard output.
+ * TODO: Optimize by only calling setStatusLED if different from last time.
+ * Not done since most of the time, this function is called because something
+ * did change but that change could indeed be a low priority condition that
+ * ultimately did not change the dashboard output.
  */
 def doRefreshDashboard() {
     def children = getChildApps()
     def fail = children.find { it.getVersion() != getVersion() }
-    if (fail)
-        log.error "Version mismatch: parent v${getVersion()} != child v${fail.getVersion()}"
+    if (fail) log.error "Version mismatch: parent v${getVersion()} != child v${fail.getVersion()}"
 
     logDebug "Refreshing ${children.size()} conditions..."
     def leds = [:]
@@ -207,6 +205,9 @@ def doRefreshDashboard() {
         (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it].color) }
         (1..7).each { if (!leds[it]) setStatusLED(device, it, "Off") }
     }
+
+    state.leds = leds.collectEntries { index, entry -> [(index): entry.color] }
+    logDebug "LEDs: ${state.leds}"
 }
 
 /**
@@ -237,15 +238,15 @@ private setStatusLED(device, index, color) {
             long baseValue = 0x01ffff00 // Solid=01, Bright=FF, Forever=FF, Hue=00
             long hueIncrement = 256/6
             switch (color) {
-                case "Red":     device.startNotification(baseValue | ((256/6*0) as long)); break
-                case "Yellow":  device.startNotification(baseValue | ((256/6*1) as long)); break
-                case "Green":   device.startNotification(baseValue | ((256/6*2) as long)); break
-                case "Cyan":    device.startNotification(baseValue | ((256/6*3) as long)); break
-                case "Blue":    device.startNotification(baseValue | ((256/6*4) as long)); break
-                case "Magenta": device.startNotification(baseValue | ((256/6*5) as long)); break
+                case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
+                case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
+                case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
+                case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
+                case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
+                case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
                 case "White":
-                    device.startNotification(baseValue); // Red
-                    log.error "${device.label}: Inovelli doesn't support LED white (ask their support for 'startNotification saturation')"
+                    device.startNotification(baseValue) // Red
+                    log.error "${device.label}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
                     break
                 case "Off":     device.stopNotification(); break
                 default:        log.error "Illegal color: ${color}"; break
@@ -259,23 +260,23 @@ private setStatusLED(device, index, color) {
 /**
  * Internal SemVer comparator function, with fancy spaceships.
  *
- * Return 1 if the given version is newer than current, 0 if the same, or -1 if older
+ * Return 1 if the given version is newer than current, 0 if the same, or -1 if older,
  * according to http://semver.org
  */
 private compareTo(version) {
     def newVersion = version.tokenize(".")*.toInteger()
-    def currentVersion = getVersion().tokenize(".")*.toInteger()
-    logDebug "Version new:${newVersion} current:${currentVersion}"
-    if (newVersion.size != 3) log.error "Illegal version"
+    def runningVersion = getVersion().tokenize(".")*.toInteger()
+    logDebug "Version new:${newVersion} running:${runningVersion}"
+    if (newVersion.size != 3) throw new RuntimeException("Illegal version:${version}")
 
-    if (newVersion[0] == currentVersion[0]) {
-        if (newVersion[1] == currentVersion[1]) {
-            newVersion[2] <=> currentVersion[2]
+    if (newVersion[0] == runningVersion[0]) {
+        if (newVersion[1] == runningVersion[1]) {
+            newVersion[2] <=> runningVersion[2]
         } else {
-            newVersion[1] <=> currentVersion[1]
+            newVersion[1] <=> runningVersion[1]
         }
     } else {
-        newVersion[0] <=> currentVersion[0]
+        newVersion[0] <=> runningVersion[0]
     }
 }
 
@@ -284,10 +285,9 @@ private compareTo(version) {
  *
  * Download a version file and set state.versionMessage if there is a newer
  * version available.  This message is displayed in the settings UI.
- * TODO: Only do this once a day
+ * TODO: Only do this once a day?
  */
 private checkNewVersion() {
-    state.versionMessage = null
     def params = [
         uri: "https://raw.githubusercontent.com",
         path: "MFornander/Hubitat/master/apps/SwitchDashboard/version.json",
@@ -299,16 +299,18 @@ private checkNewVersion() {
             logDebug "checkNewVersion response data: ${response.data}"
             switch (compareTo(response.data)) {
                 case 1:
-                    state.versionMessage = "(New v${response.data} available, current is v${getVersion()})"
+                    state.versionMessage = "(New app v${response.data} available, running is v${getVersion()})"
                     break
                 case 0:
+                    state.remove("versionMessage")
                     break
                 default:
-                    log.warn "GitHub version is older v${response.data} than current v${getVersion()}"
+                    throw new RuntimeException("GitHub v${response.data} is older than running v${getVersion()}")
             }
         }
     } catch (e) {
         log.error "checkNewVersion error: ${e}"
+        state.remove("versionMessage")
     }
 }
 
