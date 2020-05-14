@@ -1,5 +1,5 @@
 /**
- * ****************  Switch Dashboard Condition ********************
+ * **********************  Switch Dashboard Condition **********************
  *
  * MIT License - see full license in repository LICENSE file
  * Copyright (c) 2020 Mattias Fornander (@mfornander)
@@ -14,15 +14,13 @@
  *
  * Description: "Turn your LED switches into mini-dashboards"
  * Hubitat child app to be installed with "Switch Dashboard" parent app.
- * See parent app for more information.
  *
- * Versions:
- *  1.0.0 - 2020-05-xx - Initial release.
+ * See parent app for version history and more information.
  */
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "0.0.24"
+    "1.0.0"
 }
 
 /// Set app Metadata for the Hub

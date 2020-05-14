@@ -1,3 +1,3 @@
 # Hubitat
 
-Learning how to write Hubitat apps and device drivers.
+Scratch pad where I'm learning how to write Hubitat apps and device drivers.
