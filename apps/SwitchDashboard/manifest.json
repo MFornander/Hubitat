@@ -1,0 +1,29 @@
+{
+	"packageName": "Switch Dashboard",
+	"minimumHEVersion": "2.1.9",
+	"author": "Mattias Fornander",
+	"version": "1.1.0",
+	"dateReleased": "2020-05-15",
+	"documentationLink": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/README.md",
+	"communityLink": "https://community.hubitat.com/t/release-switch-dashboard-turn-your-led-status-switches-into-mini-dashboards",
+	"licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
+	"releaseNotes": "Add full Inovelli notification support",
+	"apps" : [
+		{
+			"id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4bd",
+			"name": "Switch Dashboard",
+			"namespace": "MFornander",
+			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-parent.groovy",
+			"required": true,
+			"oauth": false
+        },
+        {
+			"id" : "68b4ab2d-9fec-436d-8761-8ba1c09af8ae",
+			"name": "Switch Dashboard Condition",
+			"namespace": "MFornander",
+			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-child.groovy",
+			"required": true,
+			"oauth": false
+        }
+	]
+}

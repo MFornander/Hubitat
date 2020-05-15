@@ -19,7 +19,7 @@
  *
  * Versions:
  * 1.0.0: 2020-05-14 - Initial release.
- * 1.1.0: 2020-05-15 - Added Inovelli Configuration Value
+ * 1.1.0: 2020-05-15 - Add full Inovelli notification support
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
