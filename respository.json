@@ -1,0 +1,13 @@
+{
+	"author": "Mattias Fornander",
+	"gitHubUrl": "https://github.com/mfornander/Hubitat",
+	"payPalUrl": "",
+	"packages": [
+		{
+			"name": "Switch Dashboard",
+			"category": "Convenience",
+			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/packageManifest.json",
+			"description": "Turn your LED status switches into mini-dashboards"
+		}
+	]
+}
