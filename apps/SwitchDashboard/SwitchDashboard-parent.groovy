@@ -18,12 +18,13 @@
  * See getDescription() function body below for more details.
  *
  * Versions:
- * 1.0.0 : 2020-05-14 - Initial release.
+ * 1.0.0: 2020-05-14 - Initial release.
+ * 1.1.0: 2020-05-15 - Added Inovelli Configuration Value
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.0.0"
+    "1.1.0"
 }
 
 // Set app Metadata for the Hub
@@ -87,7 +88,20 @@ function to identify compatible switch dashboards.  There are other drivers out
 there and if you have them installed, your mileage may vary.  File a bug report
 and either I or the driver developer can look into it.
 
-<p><b>Sensor types and Virtual Switches</b><br>
+<p><b>Inovelli Configuration Value</b><br>
+The Innovelli dimmer has the ability to display effects such as Chase, Pulse,
+Blink, and many more I'm sure will be added in the future.  Instead of trying to
+keep up with their effects with a UI, there is an optional COnfiguration Value
+at the bottom of LED Indicator.  If set, this optional value is used instead of
+the Color selection on Inovelli switches.  This means that a Condition that wins
+on LED #1 may thus show Red on HomeSeers and a chasing pink on Inovelli switches.
+In a house with only Inovellis that won't matter but it may be confusing. Note
+that the duration of the value is ignored and instead force to infint since this
+app should turn off the LED, not a duration.  The confguration value can be
+computed at: <a href=https://nathanfiscus.github.io/inovelli-notification-calc>
+https://nathanfiscus.github.io/inovelli-notification-calc</a>
+
+<p><b>Sensor Types and Virtual Switches</b><br>
 The current version supports a variety of sensors but there are many missing.
 Make a bugreport or feature request on GitHub and I'll try to add it.
 However, there is this workarond: You can use a Virtual Switch in an
@@ -223,11 +237,11 @@ def doRefreshDashboard() {
     children*.addCondition(leds)
 
     devices.each { device ->
-        (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it].color) }
-        (1..7).each { if (!leds[it]) setStatusLED(device, it, "Off") }
+        (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it]) }
+        (1..7).each { if (!leds[it]) setStatusLED(device, it, [color: "Off"]) }
     }
 
-    state.leds = leds.collectEntries { index, entry -> [(index): entry.color] }
+    state.leds = leds
     logDebug "LEDs: ${state.leds}"
 }
 
@@ -239,10 +253,10 @@ def doRefreshDashboard() {
  * This function provides abstraction to treat them as they both support the
  * SetStatusLED command and simplifies dashboard updating.
  */
-private setStatusLED(device, index, color) {
+private setStatusLED(device, index, status) {
     if (device.hasCommand("setStatusLED")) {
         // HomeSeer HS-WD200+ dimmer (7 controllable LEDs)
-        switch(color) {
+        switch (status.color) {
             case "Red":     device.setStatusLED(index as String, "1"); break
             case "Yellow":  device.setStatusLED(index as String, "5"); break
             case "Green":   device.setStatusLED(index as String, "2"); break
@@ -251,27 +265,31 @@ private setStatusLED(device, index, color) {
             case "Magenta": device.setStatusLED(index as String, "4"); break
             case "White":   device.setStatusLED(index as String, "7"); break
             case "Off":     device.setStatusLED(index as String, "0"); break
-            default:        log.error "Illegal color: ${color}"; break
+            default:        log.error "Illegal status: ${status}"; break
         }
     } else if (device.hasCommand("startNotification")) {
         // Inovelli Gen2 switch or dimmer with their recent driver (1 controllable LED)
         if (index == 1) {
-            // See https://nathanfiscus.github.io/inovelli-notification-calc
-            long baseValue = 0x01ffff00 // Solid=01, Bright=FF, Forever=FF, Hue=00
-            long hueIncrement = 256/6
-            switch (color) {
-                case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
-                case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
-                case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
-                case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
-                case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
-                case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
-                case "White":
-                    device.startNotification(baseValue) // Red
-                    log.error "${device.displayName}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
-                    break
-                case "Off":     device.stopNotification(); break
-                default:        log.error "Illegal color: ${color}"; break
+            if (status.inovelli) {
+                device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
+            } else {
+                // See https://nathanfiscus.github.io/inovelli-notification-calc
+                long baseValue = 0x01ffff00 // Solid=01, Bright=FF, Forever=FF, Hue=00
+                long hueIncrement = 256/6
+                switch (status.color) {
+                    case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
+                    case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
+                    case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
+                    case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
+                    case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
+                    case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
+                    case "White":
+                        device.startNotification(baseValue) // Red
+                        log.error "${device.displayName}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
+                        break
+                    case "Off":     device.stopNotification(); break
+                    default:        log.error "Illegal status: ${status}"; break
+                }
             }
         }
     } else {
