@@ -5,7 +5,7 @@
 	"packages": [
 		{
 			"name": "Switch Dashboard",
-			"category": "Convenience",
+			"category": "Notifications",
 			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/packageManifest.json",
 			"description": "Turn your LED status switches into mini-dashboards"
 		}
