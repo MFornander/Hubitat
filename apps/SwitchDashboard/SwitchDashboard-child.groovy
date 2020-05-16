@@ -1,3 +1,4 @@
+// IMPORT URL: https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-child.groovy
 /**
  * **********************  Switch Dashboard Condition **********************
  *
@@ -20,7 +21,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.1.0"
+    "1.2.0"
 }
 
 /// Set app Metadata for the Hub
@@ -58,9 +59,11 @@ def pageConfig() {
         section("<b>LED Indicator</b>") {
             input name: "color", type: "enum", title: "Color", required: true,
                 options: ["Red", "Yellow", "Green", "Cyan", "Blue", "Magenta", "White", "Off"]
+            input name: "blink", type: "bool", title: "Blink"
             input name: "index", type: "number", title: "Index (1-7: bottom to top on HomeSeer Dimmers)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
-            input name: "inovelli", type: "number", title: "Configuration Value (optionally overrides Color on Inovelli Switches)"
+            input name: "inovelli", type: "number", title: "Configuration Value (optional color override for Inovellis, see " +
+                "<a href=https://nathanfiscus.github.io/inovelli-notification-calc>Inovelli Toolbox</a>)"
         }
         section("<b>Input</b>") {
             input name: "sensorType", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
@@ -156,19 +159,15 @@ private updateActive() {
 
 /**
  * Update function used by the parent's refreshConditions() function.
- *
  * It is given a map of the new LED dashboard and replaces the map slot
  * with this condition's color if the condition is active and has a higher
  * priority than the current color, if any.
- *
- * Non-null novelli values are tagged along in index slot 1 along with the
- * regular color and used instead on Inovelli switches.
- */
+*/
 def addCondition(leds) {
     logDebug "Condition ${app.label}: ${atomicState} ${settings}"
     if (!atomicState.active) return
     if (!leds[index as int] || (leds[index as int].priority < priority)) {
-        leds[index as int] = [color: color, priority: priority]
+        leds[index as int] = [color: color, priority: priority, blink: blink]
         if (inovelli && index == 1) leds[index as int].inovelli = inovelli
     }
 }

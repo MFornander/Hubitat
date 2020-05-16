@@ -1,3 +1,4 @@
+// IMPORT URL: https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-parent.groovy
 /**
  * **************************  Switch Dashboard **************************
  *
@@ -19,12 +20,13 @@
  *
  * Versions:
  * 1.0.0: 2020-05-14 - Initial release.
- * 1.1.0: 2020-05-15 - Add full Inovelli notification support
+ * 1.1.0: 2020-05-15 - Add Inovelli Configuration Value
+ * 1.2.0: 2020-05-16 - Add blink option and update version checking
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.1.0"
+    "1.2.0"
 }
 
 // Set app Metadata for the Hub
@@ -89,15 +91,15 @@ there and if you have them installed, your mileage may vary.  File a bug report
 and either I or the driver developer can look into it.
 
 <p><b>Inovelli Configuration Value</b><br>
-The Innovelli dimmer has the ability to display effects such as Chase, Pulse,
+The Inovelli dimmer has the ability to display effects such as Chase, Pulse,
 Blink, and many more I'm sure will be added in the future.  Instead of trying to
-keep up with their effects with a UI, there is an optional COnfiguration Value
-at the bottom of LED Indicator.  If set, this optional value is used instead of
-the Color selection on Inovelli switches.  This means that a Condition that wins
+keep up with their effects with a Hubitat UI, there is an optional Configuration
+Value at the bottom of LED Indicator.  If set, this optional value is used instead
+of the Color selection on Inovelli switches.  This means that a Condition that wins
 on LED #1 may thus show Red on HomeSeers and a chasing pink on Inovelli switches.
-In a house with only Inovellis that won't matter but it may be confusing. Note
-that the duration of the value is ignored and instead force to infint since this
-app should turn off the LED, not a duration.  The confguration value can be
+In a house with only Inovellis that won't matter but it may be confusing.  Note
+that the duration of the value is ignored and is instead forced to infinty since
+this app should turn off the LED, not a duration.  The Confguration Value can be
 computed at: <a href=https://nathanfiscus.github.io/inovelli-notification-calc>
 https://nathanfiscus.github.io/inovelli-notification-calc</a>
 
@@ -257,13 +259,13 @@ private setStatusLED(device, index, status) {
     if (device.hasCommand("setStatusLED")) {
         // HomeSeer HS-WD200+ dimmer (7 controllable LEDs)
         switch (status.color) {
-            case "Red":     device.setStatusLED(index as String, "1"); break
-            case "Yellow":  device.setStatusLED(index as String, "5"); break
-            case "Green":   device.setStatusLED(index as String, "2"); break
-            case "Cyan":    device.setStatusLED(index as String, "6"); break
-            case "Blue":    device.setStatusLED(index as String, "3"); break
-            case "Magenta": device.setStatusLED(index as String, "4"); break
-            case "White":   device.setStatusLED(index as String, "7"); break
+            case "Red":     device.setStatusLED(index as String, "1", status.blink ? "1" : "0"); break
+            case "Yellow":  device.setStatusLED(index as String, "5", status.blink ? "1" : "0"); break
+            case "Green":   device.setStatusLED(index as String, "2", status.blink ? "1" : "0"); break
+            case "Cyan":    device.setStatusLED(index as String, "6", status.blink ? "1" : "0"); break
+            case "Blue":    device.setStatusLED(index as String, "3", status.blink ? "1" : "0"); break
+            case "Magenta": device.setStatusLED(index as String, "4", status.blink ? "1" : "0"); break
+            case "White":   device.setStatusLED(index as String, "7", status.blink ? "1" : "0"); break
             case "Off":     device.setStatusLED(index as String, "0"); break
             default:        log.error "Illegal status: ${status}"; break
         }
@@ -274,7 +276,8 @@ private setStatusLED(device, index, status) {
                 device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
             } else {
                 // See https://nathanfiscus.github.io/inovelli-notification-calc
-                long baseValue = 0x01ffff00 // Solid=01, Bright=FF, Forever=FF, Hue=00
+                long baseValue = 0xAFF00 // Off=00, 100% Bright=0A, Forever=FF, Hue=00
+                baseValue |= status.blink ? 0x3000000 : 0x1000000 // Byte #4: 0x03 = blink, 0x01 = solid
                 long hueIncrement = 256/6
                 switch (status.color) {
                     case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
@@ -332,14 +335,14 @@ private compareTo(version) {
 private checkNewVersion() {
     def params = [
         uri: "https://raw.githubusercontent.com",
-        path: "MFornander/Hubitat/master/apps/SwitchDashboard/version.json",
+        path: "MFornander/Hubitat/master/apps/SwitchDashboard/packageManifest.json",
         contentType: "application/json",
         timeout: 3
     ]
     try {
         httpGet(params) { response ->
             logDebug "checkNewVersion response data: ${response.data}"
-            switch (compareTo(response.data)) {
+            switch (compareTo(response.data.version)) {
                 case 1:
                     state.versionMessage = "(New app v${response.data} available, running is v${getVersion()})"
                     break
