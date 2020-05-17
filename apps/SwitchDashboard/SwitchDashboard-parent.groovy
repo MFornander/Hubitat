@@ -22,11 +22,12 @@
  * 1.1.0: 2020-05-15 - Add Inovelli Configuration Value
  * 1.2.0: 2020-05-16 - Add blink option and update version checking
  * 1.3.0: 2020-05-17 - Add better errors when selecting unusable switches as dashboards
+ * 1.3.1: 2020-05-17 - Fix duration bug on Inovelli devices
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.3.0"
+    "1.3.1"
 }
 
 // Set app Metadata for the Hub
@@ -311,7 +312,7 @@ private setStatusLED(device, index, status) {
                 device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
             } else {
                 // See https://nathanfiscus.github.io/inovelli-notification-calc
-                long baseValue = 0xAFF00 // Off=00, 100% Bright=0A, Forever=FF, Hue=00
+                long baseValue = 0x00FF0A00 // Off=00, Forever=FF, 100% Bright=0A, Hue=00
                 baseValue |= status.blink ? 0x3000000 : 0x1000000 // Byte #4: 0x03 = blink, 0x01 = solid
                 long hueIncrement = 256/6
                 switch (status.color) {

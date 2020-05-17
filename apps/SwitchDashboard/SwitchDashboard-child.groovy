@@ -20,7 +20,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.3.0"
+    "1.3.1"
 }
 
 /// Set app Metadata for the Hub
