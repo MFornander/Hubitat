@@ -1,4 +1,3 @@
-// IMPORT URL: https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-parent.groovy
 /**
  * **************************  Switch Dashboard **************************
  *
@@ -22,11 +21,12 @@
  * 1.0.0: 2020-05-14 - Initial release.
  * 1.1.0: 2020-05-15 - Add Inovelli Configuration Value
  * 1.2.0: 2020-05-16 - Add blink option and update version checking
+ * 1.3.0: 2020-05-17 - Add better errors when selecting unusable switches as dashboards
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.2.0"
+    "1.3.0"
 }
 
 // Set app Metadata for the Hub
@@ -47,87 +47,93 @@ definition(
  * function to bring this text towards the top of the source and to
  * keep the mainPage preferences section clean and readable.
  */
-private getDescription() {
-"""<p>This parent-child app pair allows easy linking of Hubitat sensor states
-to LEDs of your HomeSeer HS-WD200 dimmers and Inovelli Gen2 switches or
-dimmers.  This is why I got excited to buy those dimmers but it was never
+private getDescription() { '''\
+This parent-child app pair allows easy linking of Hubitat sensor states \
+to LEDs of your HomeSeer HS-WD200 dimmers and Inovelli Gen2 switches or \
+dimmers.  This is why I got excited to buy those dimmers but it was never \
 easy to use them so I wrote a real app to solve this once and for all.
 
-<p>You can link states such as contact sensors open/closed, motion sensors
-active/inactive, locks locked/unlocked, and more, to LEDs of various colors on
-your switch/dimmer.  Several sensors can share an LED such that the same LED
+You can link states such as contact sensors open/closed, motion sensors \
+active/inactive, locks locked/unlocked, and more, to LEDs of various colors on \
+your switch/dimmer.  Several sensors can share an LED such that the same LED \
 can show yellow if a door is unlocked and red if open.
 
-<p><b>Conditions</b><br>
-Each set of dimmers can have one or more "Conditions" that link sensor states
-to a specific LED index and color.  Conditions also have explicit priorities
-that determine which condition gets to set an LED if there is a conflict.
-This allows the lock+door example above to always show door open as red, and
+<b>Conditions</b>
+Each set of dimmers can have one or more "Conditions" that link sensor states \
+to a specific LED index and color.  Conditions also have explicit priorities \
+that determine which condition gets to set an LED if there is a conflict. \
+This allows the lock+door example above to always show door open as red, and \
 only show yellow for unlocked if the door is closed.
 
-<p><b>LED Sharing</b><br>
-One Dashboard app can control more than one Dimmer such that several switches
-and dimmers can show the same status.  However you can also install many
+<b>LED Sharing</b>
+One Dashboard app can control more than one Dimmer such that several switches \
+and dimmers can show the same status.  However you can also install many \
 Dashboard apps if you want two dimmers to show different states.
 
-<p><b>LED Indexing</b><br>
-HomeSeer HS-WD200+ dimmer supports seven individually controllable LEDs while
-the Inovelli Gen2 switch/dimmer can only be controlled as one. You can have
-both types of dimmers share the same dashboard but the Inovelli will only
-display LED index 1.  A dashboard with an important notification can use index
-1 such that both types can show that condition and use index 2 through 7 for
-less urgent conditions that are only displayed on HomeSeers.  Also note that
-as of May 12 2020, the Inovelli doesn't support LED saturation in notifications
-so the color "White" cannot be set.  Bug their support to add full HSB (hue,
-satuation, brightness) capabilities in startNotification. See post at:
-https://community.inovelli.com/t/feedback-after-using-the-driver-api-on-gen2-devices/3240
+<b>LED Indexing</b>
+HomeSeer HS-WD200+ dimmer supports seven individually controllable LEDs while \
+the Inovelli Gen2 switch/dimmer can only be controlled as one. You can have \
+both types of dimmers share the same dashboard but the Inovelli will only \
+display LED index 1.  A dashboard with an important notification can use index \
+1 such that both types can show that condition and use index 2 through 7 for \
+less urgent conditions that are only displayed on HomeSeers.  Also note that \
+as of May 12 2020, the Inovelli doesn't support LED saturation in notifications \
+so the color "White" cannot be set.  Bug their support to add full HSB (hue, \
+satuation, brightness) capabilities in startNotification. See post at <a href= \
+https://community.inovelli.com/t/feedback-after-using-the-driver-api-on-gen2-devices/3240>\
+Inovelli Forum</a> for more details.
 
-<p><b>Device and Driver Requirements</b><br>
-This app does not control the LEDs directly and needs specific device drivers
-to do its work.  Specifically it looks for the stock WD200+ driver's
-setStatusLED() function and the official Inovelli driver's startNotification()
-function to identify compatible switch dashboards.  There are other drivers out
-there and if you have them installed, your mileage may vary.  File a bug report
-and either I or the driver developer can look into it.
+<b>Device and Driver Requirements</b>
+This app does not control the LEDs directly and needs specific device drivers \
+to do its work.  Specifically it looks for the stock WD200+ driver's \
+setStatusLED() function and the official Inovelli driver's \
+startNotification() function to identify compatible switch dashboards.  There \
+are other drivers out there and if you have them installed, your mileage may \
+vary.  File a bug report and either I or the driver developer can look into \
+it.
 
-<p><b>Inovelli Configuration Value</b><br>
-The Inovelli dimmer has the ability to display effects such as Chase, Pulse,
-Blink, and many more I'm sure will be added in the future.  Instead of trying to
-keep up with their effects with a Hubitat UI, there is an optional Configuration
-Value at the bottom of LED Indicator.  If set, this optional value is used instead
-of the Color selection on Inovelli switches.  This means that a Condition that wins
-on LED #1 may thus show Red on HomeSeers and a chasing pink on Inovelli switches.
-In a house with only Inovellis that won't matter but it may be confusing.  Note
-that the duration of the value is ignored and is instead forced to infinty since
-this app should turn off the LED, not a duration.  The Confguration Value can be
-computed at: <a href=https://nathanfiscus.github.io/inovelli-notification-calc>
-https://nathanfiscus.github.io/inovelli-notification-calc</a>
+<b>Inovelli Configuration Value</b>
+The Inovelli dimmer has the ability to display effects such as Chase, Pulse, \
+Blink, and many more I'm sure will be added in the future.  Instead of trying \
+to keep up with their effects with a Hubitat UI, there is an optional \
+Configuration Value at the bottom of LED Indicator.  If set, this optional \
+value is used instead of the Color selection on Inovelli switches.  This means \
+that a Condition that wins on LED #1 may thus show Red on HomeSeers and a \
+chasing pink on Inovelli switches. In a house with only Inovellis that won't \
+matter but it may be confusing.  Note that the duration of the value is \
+ignored and is instead forced to infinty since this app should turn off the \
+LED, not an automatic duration.  The Confguration Value can be computed at: \
+<a href=https://nathanfiscus.github.io/inovelli-notification-calc>\
+Inovelli Toolbox</a> by Nathan Fiscus.
 
-<p><b>Sensor Types and Virtual Switches</b><br>
-The current version supports a variety of sensors but there are many missing.
-Make a bugreport or feature request on GitHub and I'll try to add it.
-However, there is this workarond: You can use a Virtual Switch in an
-automation such as RuleMachine with any level of complexity and sensor inputs,
-and link a Condition.
+<b>Sensor Types and Virtual Switches</b>
+The current version supports a variety of sensors but there are many missing. \
+<a href=https://github.com/MFornander/Hubitat/issues>File a bugreport or \
+enhancement request on GitHub</a> and I'll try to add it. However, there is \
+this workarond:  You can use a Virtual Switch in an automation such as \
+RuleMachine with any level of complexity and sensor inputs, and link a \
+Condition.
 
-<p><b>Background and Use Case</b><br>
-The use case and inspiration for this app is my house with nine major doors and
-several ground level windows to the outside.  I wanted to know at glance if the
-doors were closed and/or locked since the neighborhood has seen an increase
-in burglaries and we has some punk tug at the alleyway door 6am last week.  The
-first version was a RuleMachine instance but it was not pretty write or
-maintain, but more importantly I wanted to learn more Hubitat and Groovy.
+<b>Background and Use Case</b>
+The use case and inspiration for this app is my house with nine major doors \
+and several ground level windows to the outside.  I wanted to know at glance \
+if the doors were closed and/or locked since the neighborhood has seen an \
+increase in burglaries and we has some punk tug at the alleyway door 6am last \
+week.  The first version was a RuleMachine instance but it was not pretty to \
+write or to maintain, but more importantly I wanted to learn more Hubitat and \
+Groovy.
 
-<p><b>Source Code Notes</b><br>
-I've complained previously on the Hubitat forums about how hard it it to get
-into app and driver development.  In these apps I've taken the time write
-comments that I would have appreciated when reading and learning from other
-apps.  I still wish that Hubitat would spend time write better API docs but
-until then, I hope that this commented code will help someone else get up to
+<b>Source Code Notes</b>
+I've complained previously on the Hubitat forums about how hard it it to get \
+into app and driver development.  In these apps I've taken the time write \
+comments that I would have appreciated when reading and learning from other \
+apps.  I still wish that Hubitat would spend time write better API docs but \
+until then, I hope that this commented code will help someone else get up to \
 speed faster.
 
-<p><b><i>Note that this is my first Hubitat App and first time using Groovy
-so don't trust it with anything important.</i></b>"""
+<b><i>Note that this is my first Hubitat App and first time using Groovy \
+so don't trust it with anything important.</i></b>
+'''
 }
 
 /// Defer to mainPage() function to declare the preference UI
@@ -182,15 +188,44 @@ def mainPage() {
             label title: "Name", required: false
             // TODO: Allow only selection of Inovelli/HomeSeer switches (https://community.hubitat.com/t/device-specific-inputs/36734/7)
             input "devices", "capability.switch", title: "Switches (only HomeSeer WD200+ or Inovelli Gen2)", required: true, multiple: true, submitOnChange: true
+            paragraph deviceReport()
             app name: "anyOpenApp", appName: "Switch Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             paragraph state.versionMessage
         }
         section("Instructions", hideable: true, hidden: true) {
             paragraph "<b>Switch Dashboard v${getVersion()}</b>"
-            // Strip newlines to allow the description text to flow naturally
-            paragraph getDescription().replaceAll("[\r\n]+"," ")
+            paragraph getDescription()
         }
+    }
+}
+
+/**
+ * Scan for unusable devices and return an error message if any found.
+ *
+ * This app depends on device drivers with commands that allow setting the
+ * status LED.  There doesn't seem to be a way to provide a filtered list
+ * so instead we scan the selected devices afterwards and show an error
+ * message with any unsupported devices.
+ */
+ private deviceReport() {
+     def unsupported = devices.findAll {
+         device -> ['setStatusLED', "startNotification"].every { !device.hasCommand(it) }
+    }
+
+    if (unsupported) {
+        logDebug "Unsupported devices: ${unsupported}"
+        def report = "<b>ERROR: Unsupported switches:</b><ul>"
+        unsupported.each { report += "<li>${it.name}</li>" }
+        report += '''\
+</ul><p>This error is most likely from selecting a device that is neither \
+HomeSeer WD200 nor Inovelli Gen2.  It can also result from selecting a valid \
+switch/dimmer that has an unsupported driver. Note that a recent offical \
+Inovelli driver is required and only the built-in HomeSeer WD200+ driver has \
+been tested. Official Inovelli drivers at: \
+<a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>\
+https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>
+'''
     }
 }
 
@@ -297,9 +332,12 @@ private setStatusLED(device, index, status) {
         }
     } else {
         log.error(
-            "${device.displayName} is not a usable HomeSeer or Inovelli device" +
-            " (ID:${device.id}, Name:'${device.name}' Type:'${device.typeName}')")
-    }
+            "${device.displayName} is not a usable HomeSeer or Inovelli device " +
+            "(ID:${device.id}, Name:'${device.name}' Type:'${device.typeName}') ")
+        if (device.typeName.startsWith("Inovelli Z-Wave")) log.error(
+            "Stock HE Inovelli driver detected.  Please install updated and official device drivers from: " +
+            "<a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>")
+     }
 }
 
 /**

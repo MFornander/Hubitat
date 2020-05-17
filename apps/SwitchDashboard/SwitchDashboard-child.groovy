@@ -1,4 +1,3 @@
-// IMPORT URL: https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/SwitchDashboard-child.groovy
 /**
  * **********************  Switch Dashboard Condition **********************
  *
@@ -21,7 +20,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.2.0"
+    "1.3.0"
 }
 
 /// Set app Metadata for the Hub
@@ -59,7 +58,7 @@ def pageConfig() {
         section("<b>LED Indicator</b>") {
             input name: "color", type: "enum", title: "Color", required: true,
                 options: ["Red", "Yellow", "Green", "Cyan", "Blue", "Magenta", "White", "Off"]
-            input name: "blink", type: "bool", title: "Blink"
+            input name: "blink", type: "bool", title: "Blink", defaultValue: false
             input name: "index", type: "number", title: "Index (1-7: bottom to top on HomeSeer Dimmers)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
             input name: "inovelli", type: "number", title: "Configuration Value (optional color override for Inovellis, see " +
