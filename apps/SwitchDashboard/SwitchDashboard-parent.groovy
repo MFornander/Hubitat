@@ -18,16 +18,17 @@
  * See getDescription() function body below for more details.
  *
  * Versions:
- * 1.0.0: 2020-05-14 - Initial release.
- * 1.1.0: 2020-05-15 - Add Inovelli Configuration Value
- * 1.2.0: 2020-05-16 - Add blink option and update version checking
- * 1.3.0: 2020-05-17 - Add better errors when selecting unusable switches as dashboards
- * 1.3.1: 2020-05-17 - Fix duration bug on Inovelli devices
+ * 1.0.0 (2020-05-14) - Initial release.
+ * 1.1.0 (2020-05-15) - Add Inovelli Configuration Value
+ * 1.2.0 (2020-05-16) - Add blink option and update version checking
+ * 1.3.0 (2020-05-17) - Add better errors when selecting unusable switches as dashboards
+ * 1.3.1 (2020-05-17) - Fix duration bug on Inovelli devices
+ * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.3.1"
+    "1.4.0"
 }
 
 // Set app Metadata for the Hub
@@ -262,8 +263,6 @@ def refreshDashboard() {
  * off.  This is to prevent a condition where the WD200 would temporarily
  * enter state where all LEDs are off and flash the current dimmer level
  * before setting LEDs again.
- *
- * TODO: Optimize by only calling setStatusLED if different from last set.
  */
 def doRefreshDashboard() {
     def children = getChildApps()
@@ -274,13 +273,16 @@ def doRefreshDashboard() {
     def leds = [:]
     children*.addCondition(leds)
 
+    (1..7).each { if (!leds[it]) leds[it] = [color: "Off"] }
+
+    state.setCount = 0
     devices.each { device ->
-        (1..7).each { if (leds[it]) setStatusLED(device, it, leds[it]) }
-        (1..7).each { if (!leds[it]) setStatusLED(device, it, [color: "Off"]) }
+        (1..7).each { if (leds[it].color != "Off") setStatusLED(device, it, leds[it], state.leds[it as String]) }
+        (1..7).each { if (leds[it].color == "Off") setStatusLED(device, it, leds[it], state.leds[it as String]) }
     }
 
     state.leds = leds
-    logDebug "LEDs: ${state.leds}"
+    logDebug "LEDs: ${state.leds} changes:${state.setCount}"
 }
 
 /**
@@ -290,10 +292,19 @@ def doRefreshDashboard() {
  * using their cown configuration commands but they are quite different.
  * This function provides abstraction to treat them as they both support the
  * SetStatusLED command and simplifies dashboard updating.
+ *
+ * The oldStatus param is provided to allow the function to exit if it deems
+ * the status and oldStatus to be the same. The logic for determining this
+ * is somewhat complex and was thus pushed into this method instead of at
+ * the call site.  state.setCount is a debugging counter showing the number of
+ * z-wave calls ultimately sent by the app each update.  The oldState logic
+ * proved to dramatically reduce this number since most LEDs stayed the same
+ * compared to last dashboard state.
  */
-private setStatusLED(device, index, status) {
+private setStatusLED(device, index, status, oldStatus) {
     if (device.hasCommand("setStatusLED")) {
         // HomeSeer HS-WD200+ dimmer (7 controllable LEDs)
+        if (status?.color == oldStatus?.color && status?.blink == oldStatus?.blink) return
         switch (status.color) {
             case "Red":     device.setStatusLED(index as String, "1", status.blink ? "1" : "0"); break
             case "Yellow":  device.setStatusLED(index as String, "5", status.blink ? "1" : "0"); break
@@ -307,28 +318,29 @@ private setStatusLED(device, index, status) {
         }
     } else if (device.hasCommand("startNotification")) {
         // Inovelli Gen2 switch or dimmer with their recent driver (1 controllable LED)
-        if (index == 1) {
-            if (status.inovelli) {
-                device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
-            } else {
-                // See https://nathanfiscus.github.io/inovelli-notification-calc
-                long baseValue = 0x00FF0A00 // Off=00, Forever=FF, 100% Bright=0A, Hue=00
-                baseValue |= status.blink ? 0x3000000 : 0x1000000 // Byte #4: 0x03 = blink, 0x01 = solid
-                long hueIncrement = 256/6
-                switch (status.color) {
-                    case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
-                    case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
-                    case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
-                    case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
-                    case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
-                    case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
-                    case "White":
-                        device.startNotification(baseValue) // Red
-                        log.error "${device.displayName}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
-                        break
-                    case "Off":     device.stopNotification(); break
-                    default:        log.error "Illegal status: ${status}"; break
-                }
+        if (index != 1) return
+        if (status.inovelli) {
+            if (status.inovelli == oldStatus?.inovelli) return
+            device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
+        } else {
+            if (status?.color == oldStatus?.color && status?.blink == oldStatus?.blink) return
+            // See https://nathanfiscus.github.io/inovelli-notification-calc
+            long baseValue = 0x00FF0A00 // Off=00, Forever=FF, 100% Bright=0A, Hue=00
+            baseValue |= status.blink ? 0x3000000 : 0x1000000 // Byte #4: 0x03 = blink, 0x01 = solid
+            long hueIncrement = 256/6
+            switch (status.color) {
+                case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
+                case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
+                case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
+                case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
+                case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
+                case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
+                case "White":
+                    device.startNotification(baseValue) // Red
+                    log.error "${device.displayName}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
+                    break
+                case "Off":     device.stopNotification(); break
+                default:        log.error "Illegal status: ${status}"; break
             }
         }
     } else {
@@ -338,7 +350,9 @@ private setStatusLED(device, index, status) {
         if (device.typeName.startsWith("Inovelli Z-Wave")) log.error(
             "Stock HE Inovelli driver detected.  Please install updated and official device drivers from: " +
             "<a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>")
-     }
+    }
+
+    state.setCount++
 }
 
 /**
@@ -381,15 +395,16 @@ private checkNewVersion() {
     try {
         httpGet(params) { response ->
             logDebug "checkNewVersion response data: ${response.data}"
-            switch (compareTo(response.data.version)) {
+            switch (compareTo(response.data?.version)) {
                 case 1:
-                    state.versionMessage = "(New app v${response.data} available, running is v${getVersion()})"
+                    state.versionMessage = "(New app v${response.data?.version} available, running is v${getVersion()})"
                     break
                 case 0:
                     state.remove("versionMessage")
                     break
                 default:
-                    throw new RuntimeException("GitHub v${response.data} is older than running v${getVersion()}")
+                    throw new RuntimeException("GitHub v${response.data?.version} is older than running v${getVersion()}")
+                    break
             }
         }
     } catch (e) {

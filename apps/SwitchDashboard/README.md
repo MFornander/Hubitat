@@ -1,6 +1,6 @@
 # Switch Dashboard
 
-Hubitat app that links sensor states to Inovelli Gen2 switch/dimmers and HomeSeer WD200 dimmer LEDs.
+Hubitat app that links sensor states to Inovelli Gen2 switch/dimmer and HomeSeer WD200+ dimmer LEDs.
 See getDescription() function body in SwitchDashboard-parent.groovy for more details.
 
 Also see the release notes and discussion at:
