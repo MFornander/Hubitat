@@ -147,15 +147,27 @@ preferences {
  * Called after app is initially installed.
  */
 def installed() {
-    logDebug "Installed with settings: ${settings}"
-    doRefreshDashboard()
+    initialize()
 }
 
 /**
  * Called after any of the configuration settings are changed.
  */
 def updated() {
-    logDebug "Updated with settings: ${settings}"
+    initialize()
+}
+
+/**
+ * Internal helper function with shared code for installed() and updated().
+ *
+ * Remove the cached "leds" state to trigger a full update of all switches
+ * after the user has installed app or updated settings.  This is to be sure
+ * the switches are in a good state but also to flush out any stale states
+ * from old app versions.
+ */
+private initialize() {
+    state.remove("leds")
+    logDebug "Initialize with settings: ${settings}"
     doRefreshDashboard()
 }
 
@@ -275,14 +287,14 @@ def doRefreshDashboard() {
 
     (1..7).each { if (!leds[it]) leds[it] = [color: "Off"] }
 
-    state.setCount = 0
+    state.updateCount = 0
     devices.each { device ->
-        (1..7).each { if (leds[it].color != "Off") setStatusLED(device, it, leds[it], state.leds[it as String]) }
-        (1..7).each { if (leds[it].color == "Off") setStatusLED(device, it, leds[it], state.leds[it as String]) }
+        (1..7).each { if (leds[it].color != "Off") setStatusLED(device, it, leds[it], state.leds ? state.leds[it as String] : null) }
+        (1..7).each { if (leds[it].color == "Off") setStatusLED(device, it, leds[it], state.leds ? state.leds[it as String] : null) }
     }
 
     state.leds = leds
-    logDebug "LEDs: ${state.leds} changes:${state.setCount}"
+    logDebug "LED State:${state.leds}  LEDs Updated:${state.updateCount}"
 }
 
 /**
@@ -352,7 +364,7 @@ private setStatusLED(device, index, status, oldStatus) {
             "<a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>")
     }
 
-    state.setCount++
+    state.updateCount++
 }
 
 /**

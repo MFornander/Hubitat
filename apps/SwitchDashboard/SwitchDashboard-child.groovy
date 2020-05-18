@@ -20,11 +20,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-<<<<<<< HEAD
-    "1.3.1"
-=======
     "1.4.0"
->>>>>>> Optimize LED updates by only sending changes from last state, fix version mismatch messages, fix Inovelli duration bug
 }
 
 /// Set app Metadata for the Hub
