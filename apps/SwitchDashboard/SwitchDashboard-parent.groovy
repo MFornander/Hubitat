@@ -230,7 +230,7 @@ def mainPage() {
     if (unsupported) {
         logDebug "Unsupported devices: ${unsupported}"
         def report = "<b>ERROR: Unsupported switches:</b><ul>"
-        unsupported.each { report += "<li>${it.name}</li>" }
+        unsupported.each { report += "<li>${it.displayName} (${it.typeName})</li>" }
         report += '''\
 </ul><p>This error is most likely from selecting a device that is neither \
 HomeSeer WD200 nor Inovelli Gen2.  It can also result from selecting a valid \
