@@ -20,7 +20,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.4.0"
+    "1.6.0"
 }
 
 /// Set app Metadata for the Hub
@@ -61,8 +61,26 @@ def pageConfig() {
             input name: "blink", type: "bool", title: "Blink", defaultValue: false
             input name: "index", type: "number", title: "Index (1-7: bottom to top on HomeSeer Dimmers)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
-            input name: "inovelli", type: "number", title: "Configuration Value (optional color override for Inovellis, see " +
-                "<a href=https://nathanfiscus.github.io/inovelli-notification-calc>Inovelli Toolbox</a>)"
+            input name: "inovelliFlag", type: "bool", title: "Use alternate Inovelli notification", defaultValue: false, submitOnChange: true, description: "yoyoy"
+            if (inovelliFlag) {
+                paragraph """<p>\
+Inovelli Gen2 switches and dimmers allow for more detailed LED settings.  If the option above is enabled, the settings below are used \
+on Inovelli switches instead of the regular Color/Blink options.  Note that Chase is not available on the switch model so Pulse will \
+be used on those instead.  Also note that the regular Color/Blink is still used on HomeSeer switches if the Condition is active so you \
+may end up with one color on Inovellis and another color on Homeseers if those are your settings.  Lastly, saturation is not available \
+so even though the color selection allows you to select pastell and white colors, the switches won't show it.  For now, just use the hue \
+(rainbow bar) and brighness (on the right edge of the square only.</p>"""
+                input name: "inovelliEffect", type: "enum", title: "Effect", defaultValue: 1, required: true, width: 5,
+                    options: [
+                        0: "Off",
+                        1: "Solid",
+                        3: "Fast Blink",
+                        4: "Slow Blink",
+                        5: "Pulse",
+                        2: "Chase"
+                    ]
+                input name: "inovelliColor", type: "color", title: "Color", defaultValue: "#ff0000", required: true, width: 5
+            }
         }
         section("<b>Input</b>") {
             input name: "sensorType", type: "enum", title: "Sensor Type", required: true, submitOnChange: true,
@@ -136,6 +154,43 @@ private initialize() {
 }
 
 /**
+ * TODO
+ */
+private long calclulateConfigValue(inovelli) {
+    int red = Integer.parseInt(inovelliColor.substring(1, 3), 16)
+    int green = Integer.parseInt(inovelliColor.substring(3, 5), 16)
+    int blue = Integer.parseInt(inovelliColor.substring(5, 7), 16)
+
+    long hue = getHue(red, green, blue)
+    long bright = Math.round(Math.max(Math.max(red, green), blue) * 10 / 255)
+
+    long value = hue + (bright << 8) + (0xFF << 16) + (inovelliEffect << 24)
+    logDebug "CALC Inovelli:${inovelli}  RGB:$red,$green,$blue  Hue:$hue  Bright:$bright"
+}
+
+/**
+ * TODO
+ */
+private int getHue(int red, int green, int blue) {
+    float min = Math.min(Math.min(red, green), blue)
+    float max = Math.max(Math.max(red, green), blue)
+    if (min == max) return 0
+
+    float hue = 0f
+    if (max == red) {
+        hue = (green - blue) / (max - min)
+    } else if (max == green) {
+        hue = 2f + (blue - red) / (max - min)
+    } else {
+        hue = 4f + (red - green) / (max - min)
+    }
+
+    hue = hue * 60
+    if (hue < 0) hue = hue + 360
+    Math.round(hue * 256 / 360 % 256)
+}
+
+/**
  * Function called if a sensor was selected in the UI and it detected a
  * change. Any change triggers a full refresh on the parent for it to
  * figure out the new correct LED dashboard.
@@ -167,7 +222,7 @@ def addCondition(leds) {
     if (!atomicState.active) return
     if (!leds[index as int] || (leds[index as int].priority < priority)) {
         leds[index as int] = [color: color, priority: priority, blink: blink]
-        if (inovelli && index == 1) leds[index as int].inovelli = inovelli
+        if (inovelliFlag && index == 1) leds[index as int].inovelli = [effect: inovelliEffect, color: inovelliColor]
     }
 }
 

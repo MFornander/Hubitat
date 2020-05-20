@@ -18,17 +18,18 @@
  * See getDescription() function body below for more details.
  *
  * Versions:
- * 1.0.0 (2020-05-14) - Initial release.
+ * 1.0.0 (2020-05-14) - Initial release
  * 1.1.0 (2020-05-15) - Add Inovelli Configuration Value
  * 1.2.0 (2020-05-16) - Add blink option and update version checking
  * 1.3.0 (2020-05-17) - Add better errors when selecting unusable switches as dashboards
  * 1.3.1 (2020-05-17) - Fix duration bug on Inovelli devices
  * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
+ * 1.6.0 (2020-05-21) - Add full settings UI to specify Inovelli effects
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.4.0"
+    "1.6.0"
 }
 
 // Set app Metadata for the Hub
