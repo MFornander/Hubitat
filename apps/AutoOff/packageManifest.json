@@ -1,0 +1,20 @@
+{
+    "packageName": "Auto Off",
+    "minimumHEVersion": "2.1.9",
+    "author": "Mattias Fornander (@mfornander)",
+    "version": "1.0.0",
+    "dateReleased": "2020-05-22",
+    "communityLink": "TODO",
+    "licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
+    "releaseNotes": "TODO",
+    "apps" : [
+        {
+            "id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4be",
+            "name": "Auto Off",
+            "namespace": "MFornander",
+            "location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutOff/AutoOff.groovy",
+            "required": true,
+            "oauth": false
+        }
+	]
+}
