@@ -18,17 +18,18 @@
  * See getDescription() function body below for more details.
  *
  * Versions:
- * 1.0.0 (2020-05-14) - Initial release.
+ * 1.0.0 (2020-05-14) - Initial release
  * 1.1.0 (2020-05-15) - Add Inovelli Configuration Value
  * 1.2.0 (2020-05-16) - Add blink option and update version checking
  * 1.3.0 (2020-05-17) - Add better errors when selecting unusable switches as dashboards
  * 1.3.1 (2020-05-17) - Fix duration bug on Inovelli devices
  * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
+ * 1.5.0 (2020-05-20) - Unify Inovelli effects (needs recent 2020-05-19 Inovelli driver)
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.4.0"
+    "1.5.0"
 }
 
 // Set app Metadata for the Hub
@@ -104,7 +105,11 @@ that a Condition that wins on LED #1 may thus show Red on HomeSeers and a \
 chasing pink on Inovelli switches. In a house with only Inovellis that won't \
 matter but it may be confusing.  Note that the duration of the value is \
 ignored and is instead forced to infinty since this app should turn off the \
-LED, not an automatic duration.  The Confguration Value can be computed at: \
+LED, not an automatic duration.
+<b>Also Note:</b> that you should always select Switch Type: 'Dimmer' even if \
+you have an On/Off switch.  This app will translate the dimmer effect to the \
+switch and in the case of the Chase effect the switch will use Pulse instead. \
+The Confguration Value can be computed at: \
 <a href=https://nathanfiscus.github.io/inovelli-notification-calc>\
 Inovelli Toolbox</a> by Nathan Fiscus.
 
@@ -224,19 +229,19 @@ def mainPage() {
  */
  private deviceReport() {
      def unsupported = devices.findAll {
-         device -> ['setStatusLED', "startNotification"].every { !device.hasCommand(it) }
+         device -> ['setStatusLED', "setIndicator"].every { !device.hasCommand(it) }
     }
 
     if (unsupported) {
         logDebug "Unsupported devices: ${unsupported}"
-        def report = "<b>ERROR: Unsupported switches:</b><ul>"
+        def report = "<b>ERROR: Unsupported switches (missing setStatusLED/setIndicator command):</b><ul>"
         unsupported.each { report += "<li>${it.displayName} (${it.typeName})</li>" }
         report += '''\
 </ul><p>This error is most likely from selecting a device that is neither \
-HomeSeer WD200 nor Inovelli Gen2.  It can also result from selecting a valid \
-switch/dimmer that has an unsupported driver. Note that a recent offical \
-Inovelli driver is required and only the built-in HomeSeer WD200+ driver has \
-been tested. Official Inovelli drivers at: \
+HomeSeer WD200 nor Inovelli Gen2 Red Series.  It can also result from \
+selecting a valid switch/dimmer that has an unsupported driver. Note that \
+offical Inovelli driver 2020-05-19 or newer is required and only the built-in \
+HomeSeer WD200+ driver has been tested. Official Inovelli drivers at: \
 <a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>\
 https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>
 '''
@@ -328,12 +333,21 @@ private setStatusLED(device, index, status, oldStatus) {
             case "Off":     device.setStatusLED(index as String, "0"); break
             default:        log.error "Illegal status: ${status}"; break
         }
-    } else if (device.hasCommand("startNotification")) {
-        // Inovelli Gen2 switch or dimmer with their recent driver (1 controllable LED)
+    } else if (device.hasCommand("setIndicator")) {
+        // Inovelli Gen2 Red Series switch or dimmer with their 2020-05-19 or later driver (1 controllable LED)
         if (index != 1) return
         if (status.inovelli) {
             if (status.inovelli == oldStatus?.inovelli) return
-            device.startNotification(status.inovelli | 0xFF0000) // Force duration to infinity
+            if (device.typeName == "Inovelli Switch Red Series LZW30-SN") {
+                // Translate from Dimmer to Switch configuration effects
+                switch (status.inovelli & 0xF000000) {
+                    case 0x2000000:
+                    case 0x5000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x4000000; break
+                    case 0x3000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x2000000; break
+                    case 0x4000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x3000000; break
+                }
+            }
+            device.setIndicator(status.inovelli | 0xFF0000) // Force duration to infinity
         } else {
             if (status?.color == oldStatus?.color && status?.blink == oldStatus?.blink) return
             // See https://nathanfiscus.github.io/inovelli-notification-calc
@@ -341,17 +355,17 @@ private setStatusLED(device, index, status, oldStatus) {
             baseValue |= status.blink ? 0x3000000 : 0x1000000 // Byte #4: 0x03 = blink, 0x01 = solid
             long hueIncrement = 256/6
             switch (status.color) {
-                case "Red":     device.startNotification(baseValue | 0*hueIncrement); break
-                case "Yellow":  device.startNotification(baseValue | 1*hueIncrement); break
-                case "Green":   device.startNotification(baseValue | 2*hueIncrement); break
-                case "Cyan":    device.startNotification(baseValue | 3*hueIncrement); break
-                case "Blue":    device.startNotification(baseValue | 4*hueIncrement); break
-                case "Magenta": device.startNotification(baseValue | 5*hueIncrement); break
+                case "Red":     device.setIndicator(baseValue | 0*hueIncrement); break
+                case "Yellow":  device.setIndicator(baseValue | 1*hueIncrement); break
+                case "Green":   device.setIndicator(baseValue | 2*hueIncrement); break
+                case "Cyan":    device.setIndicator(baseValue | 3*hueIncrement); break
+                case "Blue":    device.setIndicator(baseValue | 4*hueIncrement); break
+                case "Magenta": device.setIndicator(baseValue | 5*hueIncrement); break
                 case "White":
-                    device.startNotification(baseValue) // Red
+                    device.setIndicator(baseValue) // Red
                     log.error "${device.displayName}: Inovelli doesn't support white (ask their support for 'startNotification saturation')"
                     break
-                case "Off":     device.stopNotification(); break
+                case "Off":     device.setIndicator(0); break
                 default:        log.error "Illegal status: ${status}"; break
             }
         }
@@ -359,9 +373,6 @@ private setStatusLED(device, index, status, oldStatus) {
         log.error(
             "${device.displayName} is not a usable HomeSeer or Inovelli device " +
             "(ID:${device.id}, Name:'${device.name}' Type:'${device.typeName}') ")
-        if (device.typeName.startsWith("Inovelli Z-Wave")) log.error(
-            "Stock HE Inovelli driver detected.  Please install updated and official device drivers from: " +
-            "<a href=https://github.com/InovelliUSA/Hubitat/tree/master/Drivers>https://github.com/InovelliUSA/Hubitat/tree/master/Drivers</a>")
     }
 
     state.updateCount++

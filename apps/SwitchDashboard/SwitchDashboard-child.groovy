@@ -61,7 +61,8 @@ def pageConfig() {
             input name: "blink", type: "bool", title: "Blink", defaultValue: false
             input name: "index", type: "number", title: "Index (1-7: bottom to top on HomeSeer Dimmers)", defaultValue: "1", range: "1..7", required: true
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
-            input name: "inovelli", type: "number", title: "Configuration Value (optional color override for Inovellis, see " +
+            input name: "inovelli", type: "number", description: "(In Toolbox: Set Switch Type to DIMMER and paste Param 16 value here)", title:
+                "Notification Config Value (optional override for Inovellis, see " +
                 "<a href=https://nathanfiscus.github.io/inovelli-notification-calc>Inovelli Toolbox</a>)"
         }
         section("<b>Input</b>") {
