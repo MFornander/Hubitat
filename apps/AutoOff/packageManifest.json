@@ -4,7 +4,7 @@
     "author": "Mattias Fornander (@mfornander)",
     "version": "1.0.0",
     "dateReleased": "2020-05-22",
-    "communityLink": "TBD",
+    "communityLink": "https://community.hubitat.com/t/release-auto-off-automatically-turn-off-devices-after-set-amount-of-time-on/41535",
     "licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
     "releaseNotes": "Initial release",
     "apps" : [

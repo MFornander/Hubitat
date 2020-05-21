@@ -25,7 +25,7 @@ definition(
     name: "Auto Off",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Automatically turn off device after set amount of time on",
+    description: "Automatically turn off devices after set amount of time on",
     importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutoOff/AutoOff.groovy",
     iconUrl: "",
     iconX2Url: "",
@@ -72,7 +72,7 @@ def mainPage() {
     checkNewVersion()
     dynamicPage(name: "mainPage") {
         section() {
-            paragraph '<i>Automatically turn off device after set amount of time on.</i>'
+            paragraph '<i>Automatically turn off devices after set amount of time on.</i>'
             label title: "Name", required: false
             input name: "autoTime", type: "number", title: "Time until auto-off (minutes)", required: true
             input name: "devices", type: "capability.switch", title: "Devices", required: true, multiple: true
