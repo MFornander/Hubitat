@@ -26,11 +26,12 @@
  * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
  * 1.5.0 (2020-05-20) - Unify Inovelli effects (needs recent 2020-05-19 Inovelli driver)
  * 1.5.1 (2020-05-20) - Fix Inovelli switch translation logic bug
+ * 1.5.2 (2020-05-21) - Fix typo in switch translation logic
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.5.1"
+    "1.5.2"
 }
 
 // Set app Metadata for the Hub
@@ -343,9 +344,9 @@ private setStatusLED(device, index, status, oldStatus) {
                 // Translate from Dimmer to Switch configuration effect, and force duration to infinity
                 switch (status.inovelli & 0xF000000) {
                     case 0x2000000:
-                    case 0x5000000: device.setIndicator(status.inovelli & 0xFFFF | 0x4FF0000; break
-                    case 0x3000000: device.setIndicator(status.inovelli & 0xFFFF | 0x2FF0000; break
-                    case 0x4000000: device.setIndicator(status.inovelli & 0xFFFF | 0x3FF0000; break
+                    case 0x5000000: device.setIndicator(status.inovelli & 0xFFFF | 0x4FF0000); break
+                    case 0x3000000: device.setIndicator(status.inovelli & 0xFFFF | 0x2FF0000); break
+                    case 0x4000000: device.setIndicator(status.inovelli & 0xFFFF | 0x3FF0000); break
                     default: device.setIndicator(status.inovelli | 0xFF0000); break
                 }
             } else {
