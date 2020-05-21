@@ -25,11 +25,12 @@
  * 1.3.1 (2020-05-17) - Fix duration bug on Inovelli devices
  * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
  * 1.5.0 (2020-05-20) - Unify Inovelli effects (needs recent 2020-05-19 Inovelli driver)
+ * 1.5.1 (2020-05-20) - Fix Inovelli switch translation logic bug
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.5.0"
+    "1.5.1"
 }
 
 // Set app Metadata for the Hub
@@ -339,15 +340,17 @@ private setStatusLED(device, index, status, oldStatus) {
         if (status.inovelli) {
             if (status.inovelli == oldStatus?.inovelli) return
             if (device.typeName == "Inovelli Switch Red Series LZW30-SN") {
-                // Translate from Dimmer to Switch configuration effects
+                // Translate from Dimmer to Switch configuration effect, and force duration to infinity
                 switch (status.inovelli & 0xF000000) {
                     case 0x2000000:
-                    case 0x5000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x4000000; break
-                    case 0x3000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x2000000; break
-                    case 0x4000000: status.inovelli = status.inovelli & 0xFFFFFF | 0x3000000; break
+                    case 0x5000000: device.setIndicator(status.inovelli & 0xFFFF | 0x4FF0000; break
+                    case 0x3000000: device.setIndicator(status.inovelli & 0xFFFF | 0x2FF0000; break
+                    case 0x4000000: device.setIndicator(status.inovelli & 0xFFFF | 0x3FF0000; break
+                    default: device.setIndicator(status.inovelli | 0xFF0000); break
                 }
+            } else {
+                device.setIndicator(status.inovelli | 0xFF0000)
             }
-            device.setIndicator(status.inovelli | 0xFF0000) // Force duration to infinity
         } else {
             if (status?.color == oldStatus?.color && status?.blink == oldStatus?.blink) return
             // See https://nathanfiscus.github.io/inovelli-notification-calc
