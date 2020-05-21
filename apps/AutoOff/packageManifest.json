@@ -4,9 +4,9 @@
     "author": "Mattias Fornander (@mfornander)",
     "version": "1.0.0",
     "dateReleased": "2020-05-22",
-    "communityLink": "TODO",
+    "communityLink": "TBD",
     "licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
-    "releaseNotes": "TODO",
+    "releaseNotes": "Initial release",
     "apps" : [
         {
             "id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4be",

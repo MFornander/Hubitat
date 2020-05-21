@@ -13,7 +13,7 @@
  * SOFTWARE.
  *
  * Versions:
- * 1.0.0 (2020-05-xx) - Initial release
+ * 1.0.0 (2020-05-21) - Initial release
  */
 
 def getVersion() {
@@ -50,6 +50,7 @@ def installed() {
  */
 def updated() {
     unsubscribe()
+    unschedule()
     initialize()
 }
 
@@ -59,7 +60,9 @@ def updated() {
 private initialize() {
     logDebug "Initialize with settings: ${settings}"
     state.offList = [:]
-    subscribe(devices, "switch.on", switchHandler)
+
+    subscribe(devices, "switch", switchHandler)
+    runEvery1Minute(scheduleHandler)
 }
 
 /**
@@ -71,7 +74,7 @@ def mainPage() {
         section() {
             paragraph '<i>Automatically turn off device after set amount of time on.</i>'
             label title: "Name", required: false
-            input name: "autoTime", type: "number", title: "Time until auto-off (seconds)", required: true
+            input name: "autoTime", type: "number", title: "Time until auto-off (minutes)", required: true
             input name: "devices", type: "capability.switch", title: "Devices", required: true, multiple: true
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             paragraph state.versionMessage
@@ -80,12 +83,47 @@ def mainPage() {
 }
 
 /**
- * TODO
+ * Handler called when any of our devices turn on.
+ *
+ * We use the device id of the switch turning on as key since the evt.device
+ * object seems to be a proxy object that changes with each callback.  The first
+ * implementation used the evt.device as key but that would create multiple
+ * entries in the map for the same switch.  Using the device id instead ensures
+ * that a user that turn on and off and on the same switch, will only have one
+ * entry since the id stays the same and new off times replace old off times.
  */
 def switchHandler(evt) {
-    if (evt.value == "on") state.offList[evt.device.id] = (now() / 1000 + autoTime) as long
+    if (evt.value == "on") {
+        state.offList[evt.device.id] = now() + autoTime * 60 * 1000
+    } else {
+        state.offList.remove(evt.device.id)
+    }
 
-    logDebug "switchHandler evt.device:${evt.device}, evt.value:${evt.value}, state:${state} now:${(now() / 1000) as long}"
+    logDebug "switchHandler evt.device:${evt.device}, evt.value:${evt.value}, state:${state} now:${now()}"
+}
+
+/**
+ * Handler called every minute to see if any devices should be turned off.
+ *
+ * THe first pass used an optimized schedule that looked for the next switch to
+ * turn off and would schedule a callback for exactly that time and then
+ * reschedule the next off item, if any.  However, it seemed error-prone and
+ * cumbersome since errors can happen that may interrupt the rescheduling.
+ * Calling a tiny function with a quick check seemed ok to do every minute
+ * so that's v1.0 for now.
+ */
+def scheduleHandler() {
+    // Find all map entries with an off-time that is earlier than now
+    def actionList = state.offList.findAll { it.value < now() }
+
+    // Find all devices that match the off-entries from above
+    def deviceList = devices.findAll { device -> actionList.any { it.key == device.id } }
+
+    logDebug "scheduleHandler now:${now()} offList:${state.offList} actionList:${actionList} deviceList:${deviceList}"
+
+    // Call off() on all the relevant devices and remove them from the offList
+    deviceList*.off()
+    state.offList -= actionList
 }
 
 /**
