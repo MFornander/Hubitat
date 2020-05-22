@@ -8,6 +8,12 @@
 			"category": "Notifications",
 			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/SwitchDashboard/packageManifest.json",
 			"description": "Turn your LED status switches into mini-dashboards"
+		},
+		{
+			"name": "Auto Off",
+			"category": "Convenience",
+			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutoOff/packageManifest.json",
+			"description": "Automatically turn off devices after set amount of time on"
 		}
 	]
 }
