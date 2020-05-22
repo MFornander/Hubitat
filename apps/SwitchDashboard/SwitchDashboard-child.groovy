@@ -63,14 +63,7 @@ def pageConfig() {
             input name: "priority", type: "number", title: "Priority (higher overrides lower conditions)", defaultValue: "0"
             input name: "inovelliFlag", type: "bool", title: "Use alternate Inovelli notification", defaultValue: false, submitOnChange: true, description: "yoyoy"
             if (inovelliFlag) {
-                paragraph """<p>\
-Inovelli Gen2 switches and dimmers allow for more detailed LED settings.  If the option above is enabled, the settings below are used \
-on Inovelli switches instead of the regular Color/Blink options.  Note that Chase is not available on the switch model so Pulse will \
-be used on those instead.  Also note that the regular Color/Blink is still used on HomeSeer switches if the Condition is active so you \
-may end up with one color on Inovellis and another color on Homeseers if those are your settings.  Lastly, saturation is not available \
-so even though the color selection allows you to select pastell and white colors, the switches won't show it.  For now, just use the hue \
-(rainbow bar) and brighness (on the right edge of the square only.</p>"""
-                input name: "inovelliEffect", type: "enum", title: "Effect", defaultValue: 1, required: true, width: 5,
+                input name: "inovelliEffect", type: "enum", title: "Effect", defaultValue: 1, required: false, width: 5,
                     options: [
                         0: "Off",
                         1: "Solid",
@@ -79,7 +72,21 @@ so even though the color selection allows you to select pastell and white colors
                         5: "Pulse",
                         2: "Chase"
                     ]
-                input name: "inovelliColor", type: "color", title: "Color", defaultValue: "#ff0000", required: true, width: 5
+                input name: "inovelliColor", type: "color", title: "Color", defaultValue: "#ff0000", required: false, width: 5
+                input name: "inovelliValue", type: "number", description: "(In Toolbox: Set Switch Type to DIMMER and paste Param 16 value here)",
+                    title: "or explicit Config Value from <a href=https://nathanfiscus.github.io/inovelli-notification-calc>Inovelli Toolbox</a>)"
+                paragraph """<p><br>\
+Inovelli Gen2 Red Series switches and dimmers allow for more detailed LED \
+settings.<br>If the option above is enabled, these settings are used on \
+Inovelli switches instead of the regular Color/Blink options.  The Chase \
+effect is not available on the switch model so Pulse will be used on those \
+instead.  The regular Color/Blink is still used on HomeSeer switches if the \
+Condition is active so you may end up with one color on Inovellis and another \
+color on Homeseers if using this.  Saturation is not available so even though \
+the color selection allows you to select pastell and white colors, the \
+Inovellis won't show it. The explicit config value is there in case Inovelli \
+expands their effect pool or changes something else, and I'm not there to \
+keep up with a new Hubitat UI.</p>"""
             }
         }
         section("<b>Input</b>") {
@@ -105,7 +112,6 @@ so even though the color selection allows you to select pastell and white colors
  * condition on the LEDs.
  */
 def installed() {
-    logDebug "Installed with settings: ${settings}"
     initialize()
 }
 
@@ -114,7 +120,6 @@ def installed() {
  * immediate changes to the LEDs.
  */
 def updated() {
-    logDebug "Updated with settings: ${settings}"
     unsubscribe()
     initialize()
 }
@@ -144,9 +149,10 @@ def uninstalled() {
  * this better in the parent but...
  *
  * "There are only two hard things in Computer Science: cache invalidation
- * and naming things."" -- Phil Karlton
+ * and naming things." -- Phil Karlton
  */
 private initialize() {
+    updateInovelli()
     logDebug "Initialize with settings:${settings}, state:${state}"
     updateActive()
     subscribe(sensorList, sensorType, sensorHandler)
@@ -154,22 +160,42 @@ private initialize() {
 }
 
 /**
- * TODO
+ * Translate Inovelli settings into an Inovelli notification value.
+ *
+ * Extract the RGB values from the color string and compute the hue and
+ * brightness that the Inovelli switches use.  It makes me a bit sad since I
+ * know the switch uses an RGB LED so we go from RGB setings to HSB values and
+ * back again to RGB in the switch, but oh well.
+ *
+ * Inovelli if you read this, please just add a plain setRGBE() config command
+ * with Red, Green. Blue, and Effect.  You guys are awesome.
  */
-private long calclulateConfigValue(inovelli) {
-    int red = Integer.parseInt(inovelliColor.substring(1, 3), 16)
-    int green = Integer.parseInt(inovelliColor.substring(3, 5), 16)
-    int blue = Integer.parseInt(inovelliColor.substring(5, 7), 16)
+private updateInovelli() {
+    if (inovelliFlag) {
+        if (inovelliValue) {
+            // Just use explicit config value, if set in settings
+            atomicState.inovelli = inovelliValue
+        } else {
+            // Otherwise, compute hue and brightness from color
+            int red = Integer.parseInt(inovelliColor.substring(1, 3), 16)
+            int green = Integer.parseInt(inovelliColor.substring(3, 5), 16)
+            int blue = Integer.parseInt(inovelliColor.substring(5, 7), 16)
+            long hue = getHue(red, green, blue)
+            long bright = Math.round(Math.max(Math.max(red, green), blue) * 10 / 255)
 
-    long hue = getHue(red, green, blue)
-    long bright = Math.round(Math.max(Math.max(red, green), blue) * 10 / 255)
-
-    long value = hue + (bright << 8) + (0xFF << 16) + (inovelliEffect << 24)
-    logDebug "CALC Inovelli:${inovelli}  RGB:$red,$green,$blue  Hue:$hue  Bright:$bright"
+            // Compose Inovelli config value from hue, brightness, and effect (duration is always infinity)
+            atomicState.inovelli = hue + (bright << 8) + 0xFF0000 + ((inovelliEffect as long) << 24)
+            logDebug "updateInovelli:${atomicState.inovelli}  RGB:$red,$green,$blue  Hue:$hue  Bright:$bright"
+        }
+    } else {
+        atomicState.remove("inovelli")
+    }
 }
 
 /**
- * TODO
+ * Compute hue from RGB.
+ *
+ * Adapted from Java code at: https://stackoverflow.com/a/26233318
  */
 private int getHue(int red, int green, int blue) {
     float min = Math.min(Math.min(red, green), blue)
@@ -222,7 +248,7 @@ def addCondition(leds) {
     if (!atomicState.active) return
     if (!leds[index as int] || (leds[index as int].priority < priority)) {
         leds[index as int] = [color: color, priority: priority, blink: blink]
-        if (inovelliFlag && index == 1) leds[index as int].inovelli = [effect: inovelliEffect, color: inovelliColor]
+        if (inovelliFlag && index == 1) leds[index as int].inovelli = atomicState.inovelli
     }
 }
 

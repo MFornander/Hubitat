@@ -3,10 +3,10 @@
     "minimumHEVersion": "2.1.9",
     "author": "Mattias Fornander (@mfornander)",
     "version": "1.6.0",
-    "dateReleased": "2020-05-18",
+    "dateReleased": "2020-05-22",
     "communityLink": "https://community.hubitat.com/t/release-switch-dashboard-turn-your-led-status-switches-into-mini-dashboards",
     "licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
-    "releaseNotes": "Add full settings UI to specify Inovelli effects",
+    "releaseNotes": "Add full settings UI to specify Inovelli effects and colors",
     "apps" : [
         {
             "id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4bd",

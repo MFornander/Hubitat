@@ -24,7 +24,7 @@
  * 1.3.0 (2020-05-17) - Add better errors when selecting unusable switches as dashboards
  * 1.3.1 (2020-05-17) - Fix duration bug on Inovelli devices
  * 1.4.0 (2020-05-19) - Optimize LED updates by only sending changes from last state
- * 1.6.0 (2020-05-21) - Add full settings UI to specify Inovelli effects
+ * 1.6.0 (2020-05-22) - Add full settings UI to specify Inovelli effects and colors
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
@@ -95,19 +95,22 @@ are other drivers out there and if you have them installed, your mileage may \
 vary.  File a bug report and either I or the driver developer can look into \
 it.
 
-<b>Inovelli Configuration Value</b>
-The Inovelli dimmer has the ability to display effects such as Chase, Pulse, \
-Blink, and many more I'm sure will be added in the future.  Instead of trying \
-to keep up with their effects with a Hubitat UI, there is an optional \
-Configuration Value at the bottom of LED Indicator.  If set, this optional \
-value is used instead of the Color selection on Inovelli switches.  This means \
+<b>Alternate Inovelli Notifications</b>
+The Inovelli Gen2 Red Series Switch and Dimmer have the ability to display \
+256 hues and various effects such as Chase, Pulse, Slow Blink, and many more \
+I'm sure will be added in the future.  The app supports showing the common \
+denominator 7 colors and plain blink but this optional UI section can be used \
+to activate the full range on these davices.  If activated, this effect is \
+used instead of the basic Color selection on Inovelli switches.  This means \
 that a Condition that wins on LED #1 may thus show Red on HomeSeers and a \
 chasing pink on Inovelli switches. In a house with only Inovellis that won't \
-matter but it may be confusing.  Note that the duration of the value is \
-ignored and is instead forced to infinty since this app should turn off the \
-LED, not an automatic duration.  The Confguration Value can be computed at: \
+matter but it may be confusing.  The UI can be used directly to select the \
+effect and color, <b>OR</b> you can paste in an explicit Confguration Value \
+computed at: \
 <a href=https://nathanfiscus.github.io/inovelli-notification-calc>\
-Inovelli Toolbox</a> by Nathan Fiscus.
+Inovelli Toolbox</a> by Nathan Fiscus.  Note that the duration there is \
+ignored and is instead forced to infinty since this app should turn off the \
+LED when the condition is not active, not an automatic duration.
 
 <b>Sensor Types and Virtual Switches</b>
 The current version supports a variety of sensors but there are many missing. \
