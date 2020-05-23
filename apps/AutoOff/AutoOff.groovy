@@ -14,10 +14,11 @@
  *
  * Versions:
  * 1.0.0 (2020-05-21) - Initial release
+ * 1.1.0 (2020-05-23) - Add invert (auto on), and master switch options
  */
 
 def getVersion() {
-    "1.0.0"
+    "1.1.0"
 }
 
 // Set app Metadata for the Hub
@@ -76,6 +77,8 @@ def mainPage() {
             label title: "Name", required: false
             input name: "autoTime", type: "number", title: "Time until auto-off (minutes)", required: true
             input name: "devices", type: "capability.switch", title: "Devices", required: true, multiple: true
+            input name: "invert", type: "bool", title: "Invert logic (make app Auto On)", defaultValue: false
+            input name: "master", type: "capability.switch", title: "Master Switch", multiple: false
             input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
             paragraph state.versionMessage
         }
@@ -83,7 +86,7 @@ def mainPage() {
 }
 
 /**
- * Handler called when any of our devices turn on.
+ * Handler called when any of our devices turn on, or off.
  *
  * We use the device id of the switch turning on as key since the evt.device
  * object seems to be a proxy object that changes with each callback.  The first
@@ -93,17 +96,19 @@ def mainPage() {
  * entry since the id stays the same and new off times replace old off times.
  */
 def switchHandler(evt) {
-    if (evt.value == "on") {
+    // Add the watched device if turning on, or off if inverted mode
+    if ((evt.value == "on") ^ (invert == true)) {
         state.offList[evt.device.id] = now() + autoTime * 60 * 1000
     } else {
         state.offList.remove(evt.device.id)
     }
 
-    logDebug "switchHandler evt.device:${evt.device}, evt.value:${evt.value}, state:${state} now:${now()}"
+    logDebug "switchHandler now:${now()} evt.device:${evt.device}, evt.value:${evt.value}, state:${state}, " +
+        "${evt.value == "on"} ^ ${invert==true} = ${(evt.value == "on") ^ (invert == true)}"
 }
 
 /**
- * Handler called every minute to see if any devices should be turned off.
+ * Handler called every minute to see if any devices should be turned off, or on.
  *
  * THe first pass used an optimized schedule that looked for the next switch to
  * turn off and would schedule a callback for exactly that time and then
@@ -121,8 +126,13 @@ def scheduleHandler() {
 
     logDebug "scheduleHandler now:${now()} offList:${state.offList} actionList:${actionList} deviceList:${deviceList}"
 
-    // Call off() on all the relevant devices and remove them from the offList
-    deviceList*.off()
+    // Call off(), or on() if inverted, on all relevant devices and remove them from offList
+    if (!master || master.latestValue("switch") == "on") {
+        if (invert) deviceList*.on()
+        else deviceList*.off()
+    } else {
+        logDebug "Skipping actions because MasterSwitch '${master?.displayName}' is Off"
+    }
     state.offList -= actionList
 }
 

@@ -1,12 +1,12 @@
 # Auto Off
 
-Hubitat app that turns off your devices after they have been on some time.
+Turn on/off your devices after they have been off/on some time.
 
 ## Details
 
-The app allows you to select switches you want to be turned off automatically.
-Each switch is tracked individually but they all share the auto-off time
-setting.  If you need different auto-off times for different switches, just
+The app allows you to select switches you want to be turned on/off automatically.
+Each switch is tracked individually but they all share the auto-on/off time
+setting.  If you need different auto-on/off times for different switches, just
 add another instance of this app.
 
 ## Use Case
