@@ -1,7 +1,7 @@
 {
 	"author": "Mattias Fornander",
 	"gitHubUrl": "https://github.com/mfornander/Hubitat",
-	"payPalUrl": "",
+	"payPalUrl": "https://www.paypal.me/mattiasfornander",
 	"packages": [
 		{
 			"name": "Switch Dashboard",
