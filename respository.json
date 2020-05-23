@@ -13,7 +13,7 @@
 			"name": "Auto Off",
 			"category": "Convenience",
 			"location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutoOff/packageManifest.json",
-			"description": "Automatically turn off devices after set amount of time on"
+			"description": "Automatically turn off/on devices after set amount of time on/off"
 		}
 	]
 }

@@ -2,11 +2,11 @@
     "packageName": "Auto Off",
     "minimumHEVersion": "2.1.9",
     "author": "Mattias Fornander (@mfornander)",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "dateReleased": "2020-05-23",
     "communityLink": "https://community.hubitat.com/t/release-auto-off-automatically-turn-off-devices-after-set-amount-of-time-on/41535",
     "licenseFile": "https://raw.githubusercontent.com/MFornander/Hubitat/master/LICENSE",
-    "releaseNotes": "Add invert (auto on), and master switch options",
+    "releaseNotes": "Disable debug logging by default",
     "apps" : [
         {
             "id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4be",

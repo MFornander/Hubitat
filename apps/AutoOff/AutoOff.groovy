@@ -15,10 +15,11 @@
  * Versions:
  * 1.0.0 (2020-05-21) - Initial release
  * 1.1.0 (2020-05-23) - Add invert (auto on), and master switch options
+ * 1.2.0 (2020-05-23) - Disable debug logging by default
  */
 
 def getVersion() {
-    "1.1.1"
+    "1.2.0"
 }
 
 // Set app Metadata for the Hub
@@ -26,7 +27,7 @@ definition(
     name: "Auto Off",
     namespace: "MFornander",
     author: "Mattias Fornander",
-    description: "Automatically turn off devices after set amount of time on",
+    description: "Automatically turn off/on devices after set amount of time on/off",
     importUrl: "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutoOff/AutoOff.groovy",
     iconUrl: "",
     iconX2Url: "",
@@ -73,13 +74,13 @@ def mainPage() {
     checkNewVersion()
     dynamicPage(name: "mainPage") {
         section() {
-            paragraph '<i>Automatically turn off devices after set amount of time on.</i>'
+            paragraph '<i>Automatically turn off/on devices after set amount of time on/off.</i>'
             label title: "Name", required: false
             input name: "autoTime", type: "number", title: "Time until auto-off (minutes)", required: true
             input name: "devices", type: "capability.switch", title: "Devices", required: true, multiple: true
             input name: "invert", type: "bool", title: "Invert logic (make app Auto On)", defaultValue: false
             input name: "master", type: "capability.switch", title: "Master Switch", multiple: false
-            input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
+            input name: "debugEnable", type: "bool", defaultValue: "false", title: "Enable Debug Logging"
             paragraph state.versionMessage
         }
     }
