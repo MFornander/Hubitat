@@ -28,11 +28,12 @@
  * 1.5.1 (2020-05-20) - Fix Inovelli switch translation logic bug
  * 1.5.2 (2020-05-21) - Fix typo in switch translation logic
  * 1.6.0 (2020-05-22) - Add full settings UI to specify Inovelli effects and colors
+ * 1.7.0 (2020-05-23) - Add valve sensor type, set debug to false by default, update Inovelli info text on brightness
  */
 
 /// Expose parent app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.6.0"
+    "1.7.0"
 }
 
 // Set app Metadata for the Hub
@@ -214,7 +215,7 @@ def mainPage() {
             input "devices", "capability.switch", title: "Switches (only HomeSeer WD200+ or Inovelli Gen2)", required: true, multiple: true, submitOnChange: true
             paragraph deviceReport()
             app name: "anyOpenApp", appName: "Switch Dashboard Condition", namespace: "MFornander", title: "Add LED status condition", multiple: true
-            input name: "debugEnable", type: "bool", defaultValue: "true", title: "Enable Debug Logging"
+            input name: "debugEnable", type: "bool", defaultValue: "false", title: "Enable Debug Logging"
             paragraph state.versionMessage
         }
         section("Instructions", hideable: true, hidden: true) {

@@ -20,7 +20,7 @@
 
 /// Expose child app version to allow version mismatch checks between child and parent
 def getVersion() {
-    "1.6.0"
+    "1.7.0"
 }
 
 /// Set app Metadata for the Hub
@@ -77,16 +77,21 @@ def pageConfig() {
                     title: "or explicit Config Value from <a href=https://nathanfiscus.github.io/inovelli-notification-calc>Inovelli Toolbox</a>)"
                 paragraph """<p><br>\
 Inovelli Gen2 Red Series switches and dimmers allow for more detailed LED \
-settings.<br>If the option above is enabled, these settings are used on \
-Inovelli switches instead of the regular Color/Blink options.  The Chase \
-effect is not available on the switch model so Pulse will be used on those \
-instead.  The regular Color/Blink is still used on HomeSeer switches if the \
-Condition is active so you may end up with one color on Inovellis and another \
-color on Homeseers if using this.  Saturation is not available so even though \
-the color selection allows you to select pastell and white colors, the \
-Inovellis won't show it. The explicit config value is there in case Inovelli \
-expands their effect pool or changes something else, and I'm not there to \
-keep up with a new Hubitat UI.</p>"""
+settings.<br>
+If the option above is enabled, these settings are used on Inovelli switches \
+instead of the regular Color/Blink options.  The Chase effect is not \
+available on the switch model so Pulse will be used on those instead.  The \
+regular Color/Blink is still used on HomeSeer switches if the Condition is \
+active so you may end up with one color on Inovellis and another color on \
+Homeseers if using this.<br>
+Brightness is controlled by selecting a darker color, vertically in the \
+color box.<br>
+Saturation (horizontal selection in color box) is not available so even \
+though the color selection allows you to select pastell and white colors, the \
+Inovellis won't show it.<br>
+The explicit config value is there in case Inovelli expands their effect \
+pool or changes something else, and I'm not there to keep up with a new \
+Hubitat UI.</p>"""
             }
         }
         section("<b>Input</b>") {
@@ -96,7 +101,8 @@ keep up with a new Hubitat UI.</p>"""
                     "contact": "Door/Window Sensor",
                     "lock": "Lock",
                     "motion": "Motion Sensor",
-                    "water": "Water Sensor"
+                    "water": "Water Sensor",
+                    "valve": "Valve"
                 ]
             if (sensorType) {
                 input name: "sensorList", type: "capability.${capabilityName(sensorType)}", title: "Sensors (any will trigger)", required: true, multiple: true
@@ -270,6 +276,7 @@ private attributeValues(attributeName) {
         case "switch":
             return ["on","off"]
         case "contact":
+        case "valve":
             return ["open","closed"]
         case "motion":
             return ["active","inactive"]
@@ -288,7 +295,7 @@ private attributeValues(attributeName) {
  */
 private capabilityName(attributeName) {
     switch (attributeName) {
-        case ["switch", "lock"]:
+        case ["switch", "lock", "valve"]:
             return attributeName
         default:
             return "${attributeName}Sensor"
