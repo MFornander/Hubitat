@@ -12,7 +12,7 @@
             "id" : "a478390f-b99f-4f7d-b6ba-b268a3c7c4be",
             "name": "Auto Off",
             "namespace": "MFornander",
-            "location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutOff/AutoOff.groovy",
+            "location": "https://raw.githubusercontent.com/MFornander/Hubitat/master/apps/AutoOff/AutoOff.groovy",
             "required": true,
             "oauth": false
         }
