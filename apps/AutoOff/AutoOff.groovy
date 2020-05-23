@@ -18,7 +18,7 @@
  */
 
 def getVersion() {
-    "1.1.0"
+    "1.1.1"
 }
 
 // Set app Metadata for the Hub
